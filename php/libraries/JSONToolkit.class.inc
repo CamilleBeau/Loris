@@ -29,9 +29,7 @@ namespace LORIS;
 
 class JSONToolkit
 {
-    // TODO: Add checks for if fields don't exist / messages for when wrong inputs
     // TODO: Check if other option than unsafeupdate w/out escaped char
-
 
     var $instrName;
     var $flagData;
@@ -46,11 +44,11 @@ class JSONToolkit
     {
         $db = \Database::singleton();
 
-        $instrCheck = $db->pselect(
+        $checkInstrument = $db->pselect(
             "SELECT Test_name FROM test_battery WHERE Test_name=:tbln",
             array("tbln" => $instrumentName)
         );
-        if (empty($instrCheck)) {
+        if (empty($checkInstrument)) {
             throw new Exception("The instrument ". $instrumentName . "was not found in the database.");
         }
 
@@ -118,11 +116,15 @@ class JSONToolkit
             // Array of instrument data
             $instrData = json_decode($data['Data'], true);
 
-            if (isset($instrData[$selected])
-                && isset($instrData[$field])
-                && $instrData[$field] === $val
+            if (key_exists($selected, $instrData)
+                && key_exists($field, $instrData)
             ) {
-                $results[$cmid] = $instrData[$selected];
+                // Check that field has specified value, including 'null'
+                if ($instrData[$field] === $val ||
+                    ($val === 'null' && empty($instrData[$field]))
+                ) {
+                    $results[$cmid] = $instrData[$selected];
+                }
             }
         }
         return $results;
@@ -131,10 +133,11 @@ class JSONToolkit
     /**
      * Renames field of instrument
      *
-     * @param string $oldName   Name of field to rename
-     * @param string $newName   What the field will be renamed as
+     * @param string $oldName Name of field to rename
+     * @param string $newName What the field will be renamed as
      *
      * @return int              Return number of fields altered
+     * @throws \DatabaseException
      */
     public function rename(string $oldName, string $newName)
     {
@@ -149,18 +152,17 @@ class JSONToolkit
             $instrData = json_decode($data['Data'], true);
 
             // Do not rename if there is already field with $newName
-            if (isset($instrData[$newName])) {
+            if (key_exists($newName, $instrData)) {
                 continue;
             }
 
-            if (isset($instrData[$oldName])) {
-
-                $value = $instrData[$oldName];
+            if (key_exists($oldName, $instrData)) {
 
                 // replace old field name with new field name
                 $fieldNames = array_keys($instrData);
                 $fieldNames[array_search($oldName, $fieldNames)] = $newName;
                 $instrData = array_combine($fieldNames, $instrData);
+
                 $renamedData = json_encode($instrData);
 
                 // Update flagData variable
@@ -182,9 +184,10 @@ class JSONToolkit
     /**
      * Drop field from instrument data
      *
-     * @param string $field     Name of field to be dropped
+     * @param string $field Name of field to be dropped
      *
      * @return int              Return number of fields altered
+     * @throws \DatabaseException
      */
     public function drop(string $field)
     {
@@ -227,14 +230,15 @@ class JSONToolkit
      * (Alter value of $field to $newVal if the
      * $conditionalField has value $conditionalValue)
      *
-     * @param string $field             The name of field whos data will be changed.
-     * @param string $newVal            The value that the field will be changed to.
-     * @param string $conditionalField  The name of field to check the value of.
+     * @param string $field The name of field whos data will be changed.
+     * @param string $newVal The value that the field will be changed to.
+     * @param string $conditionalField The name of field to check the value of.
      *                                  Modification is conditional on this field.
-     * @param string $conditionalVal    Value to check whether the $conditionalField has,
+     * @param string $conditionalVal Value to check whether the $conditionalField has,
      *                                  and have the modification be conditional of.
      *
      * @return int                      Return number of fields altered
+     * @throws \DatabaseException
      */
     public function modify($field, $newVal, $conditionalField, $conditionalVal)
     {
@@ -251,29 +255,31 @@ class JSONToolkit
 
             if (key_exists($field, $instrData)
                 && key_exists($conditionalField, $instrData)
-                && $instrData[$conditionalField] === $conditionalVal
             ) {
+                if ($instrData[$conditionalField] === $conditionalVal ||
+                    ($newVal === 'null' && empty($instrData[$conditionalField]))
+                ) {
+                    // set new value (check if null)
+                    $instrData[$field] = $newVal === 'null' ? null : $newVal;
 
-                // set new value (check if null)
-                $instrData[$field] = $newVal === 'null' ? null : $newVal;
+                    if ($this->validate($instrData, $cmid)) {
 
-                if ($this->validate($instrData, $cmid)) {
+                        $newData = json_encode($instrData);
 
-                    $newData = json_encode($instrData);
+                        // Update flagData variable
+                        $this->flagdata[$cmid]['Data'] = $newData;
 
-                    // Update flagData variable
-                    $this->flagdata[$cmid]['Data'] = $newData;
-
-                    // Update database
-                    $db = \Database::singleton();
-                    $db->unsafeupdate(
-                        "flag",
-                        array("Data" => $newData),
-                        array("CommentID" => $cmid)
-                    );
-                    $dataAltered++;
-                } else {
-                    // TODO: error that value is not allowed
+                        // Update database
+                        $db = \Database::singleton();
+                        $db->unsafeupdate(
+                            "flag",
+                            array("Data" => $newData),
+                            array("CommentID" => $cmid)
+                        );
+                        $dataAltered++;
+                    } else {
+                        throw new Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
+                    }
                 }
             }
         }
@@ -283,18 +289,19 @@ class JSONToolkit
     /**
      * Alter value of a field using given operation
      *
-     * @param function $fn                  Function containing the operation to be done
+     * @param callable $fn                  Function containing the operation to be done
      *                                      on the specified field
-     * @param string $field                 The name of the field to modify
+     * @param string $field The name of the field to modify
      * @param string|null $conditionalField The field to check the value of, and have the
      *                                      modification be conditional of
-     * @param string|null $conditionalVal   Value to check whether the $conditionalField has,
+     * @param string|null $conditionalVal Value to check whether the $conditionalField has,
      *                                      and have the modification be conditional of
      *
      * @return int                          Return number of fields altered
+     * @throws \DatabaseException
      */
     public function customModify(
-        $fn,
+        callable $fn,
         string $field,
         ?string $conditionalField = null,
         ?string $conditionalVal = null
@@ -316,8 +323,17 @@ class JSONToolkit
                 if (isset($conditionalField)
                     && isset($conditionalVal)
                 ) {
-                    if($instrData[$conditionalField] !== $conditionalVal) {
-                    continue;
+                    // make sure key exists before checking value
+                    if(key_exists($conditionalField, $instrData)) {
+                        // check value match for conditional field, including null
+                        if($instrData[$conditionalField] !== $conditionalVal &&
+                            ($conditionalVal !== 'null' || !empty($instrData[$conditionalField]))
+                        ) {
+                            continue;
+                        }
+                    } else {
+                        // if key does not exist, don't change anything
+                        continue;
                     }
                 }
 
@@ -340,13 +356,12 @@ class JSONToolkit
                     );
                     $alteredData++;
                 } else {
-                    // TODO: error that value is not allowed
+                    throw new Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
                 }
             }
         }
         return $alteredData;
     }
-
 
     /**
      * Check if there is a status field in

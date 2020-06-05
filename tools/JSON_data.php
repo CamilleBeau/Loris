@@ -46,13 +46,13 @@ switch ($action) {
         // Execute action, set array of commentIDs
         $cmids = $toolkit->select($field, $val);
         print_r(
-            "The following is a list of CommentIDs where the field $field\n
-            has the value $val in the instrument $test_name:\n"
+            "The following is a list of CommentIDs where the field $field ".
+            "has the value $val in the instrument $test_name:\n"
         );
         print_r($cmids);
         break;
 
-    case 'selectField':
+    case 'selectfield':
         if (count($argv) !== 6) {
             showHelp();
         }
@@ -63,8 +63,8 @@ switch ($action) {
         // Perform action, set results array
         $results = $toolkit->selectField($selected, $field, $val);
         print_r(
-            "The following is a list of CommentIDs and values for field $selected\n 
-             where the field $field has the value $val in the instrument $test_name:\n"
+            "The following is a list of CommentIDs and values for field $selected ".
+            "where the field $field has the value $val in the instrument $test_name:\n"
         );
         print_r($results);
         break;
@@ -82,8 +82,8 @@ switch ($action) {
             print_r("The command was performed with $fieldsChanged changes made.\n");
         } else {
             print_r(
-                "No changes were made in the database. The field $oldName may not\n
-                exist or there may already be a field named $newName \n"
+                "No changes were made in the database. The field $oldName may not ".
+                "exist or there may already be a field named $newName \n"
             );
         }
 
@@ -134,14 +134,15 @@ switch ($action) {
             print_r("The command was performed with $fieldsChanged changes made.\n");
         } else {
             print_r(
-                "No changes were made in the database. The field $field may not exist \n
-                or the field $conditionalField may never have the value $conditionalVal\n"
+                "No changes were made in the database. The field $field and/or ".
+                "$conditionalField may not exist, or the field $conditionalField ".
+                "may never have the value $conditionalVal\n"
             );
         }
 
         // Check for status field
         if($toolkit->checkStatusField($field)) {
-            print_r("*** A status field " . $field . "_status has been detected. ***\n");
+            print_r("*** A status field $field" . "_status has been detected. ***\n");
         }
         break;
 
@@ -150,22 +151,31 @@ switch ($action) {
             showHelp();
         }
 
-        $operation = $argv[3];
-        $opVal = $argv[4];
-        $field = $argv[5];
+        $field = $argv[3];
+        $operation = $argv[4];
+        $opVal = $argv[5];
         $fn;
 
         // Set anonymous function
         if ($operation === 'add') {
             $fn = function ($val) use($opVal) {
+                if (!is_numeric($val) || !is_numeric($opVal)) {
+                    throw new Exception("Non-numeric value given for addition operation");
+                }
                 return $val + $opVal;
             };
         } elseif ($operation === 'multiply') {
             $fn = function ($val) use($opVal) {
+                if (!is_numeric($val) || !is_numeric($opVal)) {
+                    throw new Exception("Non-numeric value given for multiplication operation");
+                }
                 return $val * $opVal;
             };
         } elseif ($operation === 'divide') {
             $fn = function ($val) use($opVal) {
+                if (!is_numeric($val) || !is_numeric($opVal)) {
+                    throw new Exception("Non-numeric value given for division operation");
+                }
                 return $val / $opVal;
             };
         } elseif ($operation === 'concat') {
@@ -199,13 +209,12 @@ switch ($action) {
         if($fieldsChanged) {
             print_r("The command was performed with $fieldsChanged changes made.\n");
         } else {
-            // TODO: add custom info for statement
             print_r("No changes were made in the database. \n");
         }
 
         // check for status field
         if($toolkit->checkStatusField($field)) {
-            print_r("*** A status field " . $field . "_status has been detected. ***\n");
+            print_r("*** A status field  $field"."_status has been detected. ***\n");
         }
         break;
 
@@ -243,10 +252,10 @@ Drop:           php JSON_data.php [tbl] drop [field]
 Modify:         php JSON_data.php [tbl] modify [field] [newVal] [conField] [conVal]
                 -   Set [field] to [newVal] where [conField] has value [conVal] for instrument [tbl]
                 
-customModify:   php JSON_data.php [tbl] customModify [operation] [opVal] [field]
+customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal] 
                 -   Perform [operation]* with value [opVal] on [field] in instrument [tbl]
                 
-                php JSON_data.php [tbl] customModify [operation] [field] [conField] [conVal]
+                php JSON_data.php [tbl] customModify [field] [operation] [opVal] [conField] [conVal]
                 -   Perform [operation]* with value [opVal] on [field] in instrument [tbl] 
                     when [conField] has value [conVal]
                     
