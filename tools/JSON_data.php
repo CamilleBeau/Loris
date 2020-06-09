@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 /**
  * Tools for viewing and manipulating instrument JSON data
  *
@@ -11,10 +12,13 @@
  * @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
  * @link     https://github.com/aces/Loris
  */
-require_once "generic_includes.php";
 require_once __DIR__ . "/../vendor/autoload.php";
+require_once "generic_includes.php";
+require_once "JSONToolkit.class.inc";
 
 use LORIS\JSONToolkit;
+
+// TODO: Convert conditions to array
 
 // Help message
 if(count($argv) <  3 || $argv[1] === 'help') {
@@ -65,6 +69,22 @@ switch ($action) {
         print_r(
             "The following is a list of CommentIDs and values for field $selected ".
             "where the field $field has the value $val in the instrument $test_name:\n"
+        );
+        print_r($results);
+        break;
+
+    case 'selectall':
+        if (count($argv) !== 5) {
+            showHelp();
+        }
+        $field = $argv[3];
+        $val = $argv[4];
+
+        // Perform action, set results array
+        $results = $toolkit->selectAll($field, $val);
+        print_r(
+            "The following is a list of CommentIDs and full data where the field ".
+            "$field has the value $val in the instrument $test_name:\n"
         );
         print_r($results);
         break;

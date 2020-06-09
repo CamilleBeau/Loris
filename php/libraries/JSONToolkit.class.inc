@@ -27,10 +27,12 @@ namespace LORIS;
  * @link     https://www.github.com/aces/Loris-Trunk/
  */
 
+
 class JSONToolkit
 {
     // TODO: Check if other option than unsafeupdate w/out escaped char
-
+    // TODO: Fix all function descriptions
+    // TODO: Overview conditionals
     var $instrName;
     var $flagData;
 
@@ -70,11 +72,11 @@ class JSONToolkit
      *
      * @return array            List of commentIDs
      */
-    public function select($field, $val)
+    public function select($conditionArray)
     {
         $cmids = array();
-        foreach ($this->flagData as $cmid => $data) {
 
+        foreach ($this->flagData as $cmid => $data) {
             // Continue if data is empty
             if (is_null($data['Data'])) {
                 continue;
@@ -83,7 +85,8 @@ class JSONToolkit
             // Array of instrument data
             $instrData = json_decode($data['Data'], true);
 
-            if (isset($instrData[$field]) && $instrData[$field] === $val) {
+            // Add CommentID if every condition is met
+            if($this->checkConditions($instrData, $conditionArray)) {
                 $cmids[] = $cmid;
             }
         }
@@ -91,8 +94,7 @@ class JSONToolkit
     }
 
     /**
-     * Select value of a field where a field has specific value
-     * (Select value of $selected where $field has $val)
+     * Select value of $selected when $field has $val
      *
      * @param string $selected      Name of field to return values of
      * @param string $field         Name of field to check value of
@@ -103,7 +105,7 @@ class JSONToolkit
      * @return array                Array of values for $selected
      *                              CommentID as key
      */
-    public function selectField($selected, $field, $val)
+    public function selectField($selected, $conditionArray)
     {
         $results = array();
         foreach ($this->flagData as $cmid => $data) {
@@ -116,18 +118,44 @@ class JSONToolkit
             // Array of instrument data
             $instrData = json_decode($data['Data'], true);
 
-            if (key_exists($selected, $instrData)
-                && key_exists($field, $instrData)
-            ) {
-                // Check that field has specified value, including 'null'
-                if ($instrData[$field] === $val ||
-                    ($val === 'null' && empty($instrData[$field]))
-                ) {
-                    $results[$cmid] = $instrData[$selected];
-                }
+            // Continue if field to select does not exist
+            if (!key_exists($selected, $instrData)) {
+                continue;
+            }
+
+            if ($this->checkConditions($instrData, $conditionArray)) {
+                $results[$cmid] = $instrData[$selected];
             }
         }
         return $results;
+    }
+
+    /**
+     * Select data where a field has certain value
+     *
+     * @param string $field     Name of field to look for specific value
+     * @param string $val       Value to look for for the given field
+     *
+     * @return array            Array of instrument data with CommentID as key
+     */
+    public function selectAll($conditionArray)
+    {
+        $result = array();
+        foreach ($this->flagData as $cmid => $data) {
+
+            // Continue if data is empty
+            if (is_null($data['Data'])) {
+                continue;
+            }
+
+            // Array of instrument data
+            $instrData = json_decode($data['Data'], true);
+
+            if ($this->checkConditions($instrData, $conditionArray)) {
+                $result[$cmid] = $instrData;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -163,16 +191,16 @@ class JSONToolkit
                 $fieldNames[array_search($oldName, $fieldNames)] = $newName;
                 $instrData = array_combine($fieldNames, $instrData);
 
-                $renamedData = json_encode($instrData);
+                $newData = json_encode($instrData);
 
                 // Update flagData variable
-                $this->flagData[$cmid]['Data'] = $renamedData;
+                $this->flagData[$cmid]['Data'] = $newData;
 
                 // Update database
                 $db = \Database::singleton();
                 $db->unsafeupdate(
                     "flag",
-                    array("Data" => $renamedData),
+                    array("Data" => $newData),
                     array("CommentID" => $cmid)
                 );
                 $dataAltered++;
@@ -203,10 +231,11 @@ class JSONToolkit
             // Array of instrument data
             $instrData = json_decode($data['Data'], true);
 
-            if (isset($instrData[$field])) {
+            if (key_exists($field, $instrData)) {
 
                 // Remove field
                 unset($instrData[$field]);
+
                 $newData = json_encode($instrData);
 
                 // Update flagData variable
@@ -240,7 +269,7 @@ class JSONToolkit
      * @return int                      Return number of fields altered
      * @throws \DatabaseException
      */
-    public function modify($field, $newVal, $conditionalField, $conditionalVal)
+    public function modify($field, $newVal, $conditionArray)
     {
         $dataAltered = 0;
         foreach ($this->flagData as $cmid => $data) {
@@ -253,33 +282,34 @@ class JSONToolkit
             // Array of instrument data
             $instrData = json_decode($data['Data'], true);
 
-            if (key_exists($field, $instrData)
-                && key_exists($conditionalField, $instrData)
-            ) {
-                if ($instrData[$conditionalField] === $conditionalVal ||
-                    ($newVal === 'null' && empty($instrData[$conditionalField]))
-                ) {
-                    // set new value (check if null)
-                    $instrData[$field] = $newVal === 'null' ? null : $newVal;
+            if (!key_exists($field, $instrData)) {
+                continue;
+            }
 
-                    if ($this->validate($instrData, $cmid)) {
+            if ($this->checkConditions($instrData, $conditionArray)) {
+                // set new value (check if null)
+                $instrData[$field] = $newVal === 'null' ? null : $newVal;
 
-                        $newData = json_encode($instrData);
+                $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
 
-                        // Update flagData variable
-                        $this->flagdata[$cmid]['Data'] = $newData;
+                if ($this->validate($instrData, $instrument, $field)) {
 
-                        // Update database
-                        $db = \Database::singleton();
-                        $db->unsafeupdate(
-                            "flag",
-                            array("Data" => $newData),
-                            array("CommentID" => $cmid)
-                        );
-                        $dataAltered++;
-                    } else {
-                        throw new Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
-                    }
+                    $newData = json_encode($instrData);
+
+                    // Update flagData variable
+                    $this->flagdata[$cmid]['Data'] = $newData;
+
+                    // Update database
+                    $db = \Database::singleton();
+                    $db->unsafeupdate(
+                        "flag",
+                        array("Data" => $newData),
+                        array("CommentID" => $cmid)
+                    );
+                    $dataAltered++;
+
+                } else {
+                    throw new \Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
                 }
             }
         }
@@ -303,8 +333,7 @@ class JSONToolkit
     public function customModify(
         callable $fn,
         string $field,
-        ?string $conditionalField = null,
-        ?string $conditionalVal = null
+        ?array $conditionArray = null
     ) {
         $alteredData = 0;
         foreach ($this->flagData as $cmid => $data) {
@@ -316,50 +345,41 @@ class JSONToolkit
             // Array of instrument data
             $instrData = json_decode($data['Data'], true);
 
-            if (key_exists($field, $instrData)) {
+            if (!key_exists($field, $instrData)) {
+                continue;
+            }
 
-                // If conditionals are given, only alter data if the
-                // conditional field has conditional value
-                if (isset($conditionalField)
-                    && isset($conditionalVal)
-                ) {
-                    // make sure key exists before checking value
-                    if(key_exists($conditionalField, $instrData)) {
-                        // check value match for conditional field, including null
-                        if($instrData[$conditionalField] !== $conditionalVal &&
-                            ($conditionalVal !== 'null' || !empty($instrData[$conditionalField]))
-                        ) {
-                            continue;
-                        }
-                    } else {
-                        // if key does not exist, don't change anything
+            // If conditionals are given, only alter data if the
+            // conditions are met. Otherwise, continue.
+            if (isset($conditionArray) && !$this->checkConditions($instrData, $conditionArray)) {
+                // make sure key exists before checking value
                         continue;
-                    }
-                }
+            }
 
-                // set new value
-                $instrData[$field] = $fn($instrData[$field]);
+            // set new value
+            $instrData[$field] = $fn($instrData[$field]);
 
-                $newData = json_encode($instrData);
+            $newData = json_encode($instrData);
 
-                if ($this->validate($newData, $cmid)) {
+            $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
+            if ($this->validate($instrData, $instrument, $field)) {
 
-                    // Update flagData variable
-                    $this->flagdata[$cmid]['Data'] = $newData;
+                // Update flagData variable
+                $this->flagdata[$cmid]['Data'] = $newData;
 
-                    // Update database
-                    $db = \Database::singleton();
-                    $db->unsafeupdate(
-                        "flag",
-                        array("Data" => $newData),
-                        array("CommentID" => $cmid)
-                    );
-                    $alteredData++;
-                } else {
-                    throw new Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
-                }
+                // Update database
+                $db = \Database::singleton();
+                $db->unsafeupdate(
+                    "flag",
+                    array("Data" => $newData),
+                    array("CommentID" => $cmid)
+                );
+                $alteredData++;
+            } else {
+                throw new Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
             }
         }
+
         return $alteredData;
     }
 
@@ -394,14 +414,155 @@ class JSONToolkit
     }
 
     /**
+     * Check if there is a status field in
+     * an instrument's data for a given fieldname
+     * (e.g. $field "name" given: search for "name_status")
+     *
+     * @param string $field     Name of the field to check for relative status field
+     *
+     * @return bool             Return true if status field found
+     */
+    public function checkConditions($data, $conditionArray) {
+        $pass = true;
+
+        // Check each condition in array
+        foreach($conditionArray as $field => $value) {
+            if (!key_exists($field, $data)) {
+                // if the field does not exist in the data, condition not met
+                $pass = false;
+            } elseif ($data[$field] !== $value &&
+                !($value === 'null' && empty($data[$field]))
+            ) {
+                // if the value does not match the data value, condition not met
+                // including null option
+                $pass = false;
+            }
+        }
+        return $pass;
+    }
+
+    // TODO: fix this function description
+    /**
      * Make sure fields are of the correct data type
      *
      * @param $data
-     * @param $cmid
+     * @param $instrument
      * @return bool
      */
-    function validate($data, $cmid) {
-        // TODO: Validate that new data is allowed
+    public function validate($data, $instrument, $field) {
+        $form = $instrument->form;
+        $values = $data;
+        // TODO: check for if key exists
+        // TODO: Decide what happens if key does not exist
+        // TODO: unset instrument_title from $form->form
+        unset($form->form['instrument_title']);
+
+        foreach ($form->form as $elName => $el) {
+            if ($el['type'] === 'group') {
+                // TODO: only look at relevant field
+                if (isset($el['required'])) {
+                    foreach ($el['required'] as $elementIndex) {
+                        $childEl  = $el['elements'][$elementIndex];
+                        $childVal = $values[$childEl['name']];
+                        if ($childVal === null || $childVal === '') {
+                            return false;
+                        }
+                    }
+                }
+
+                if (isset($el['numeric'])) {
+                    foreach ($el['numeric'] as $elementIndex) {
+                        $childEl = $el['elements'][$elementIndex];
+                        if (!is_numeric($values[$childEl['name']])
+                            && !empty($values[$childEl['name']])
+                        ) {
+                            return false;
+                        }
+                    }
+                }
+            } else {
+                if (!key_exists('name', $el)) {
+                    continue;
+                } elseif ($el['name'] !== $field) {
+                    continue;
+                }
+
+                $value = $values[$el['name']];
+                if (isset($el['required'])
+                    && $el['required'] === true
+                    && $value === ""
+                ) {
+                    return false;
+                }
+
+                if (isset($el['compare'])
+                    && $value != $values[$el['compare']]
+                ) {
+                    return false;
+                }
+
+                if (isset($el['numeric'])
+                    && $el['numeric'] === true
+                    && !is_numeric($value)
+                    && !empty($value)
+                ) {
+                    return false;
+                }
+
+                if (isset($el['regex'])) {
+                    foreach ($el['regex'] as $regex) {
+                        if (!empty($value)
+                            && !preg_match($regex['match'], $value)
+                        ) {
+                            return false;
+                        }
+                    }
+                }
+
+                if (isset($el['email'])
+                    && $el['email'] === true
+                    && !filter_var($value, FILTER_VALIDATE_EMAIL)
+                    && !empty($value)
+                ) {
+                    return false;
+                }
+
+                if (isset($el['maxlength'])
+                    && strlen(strval($value)) > $el['maxlength']['maxlength']
+                ) {
+                    return false;
+                }
+
+                // Check if date fields have errors and add them to error list
+                if ($el['type'] === 'date') {
+                    $date = $values[$elName];
+                    if (empty($date)) {
+                        continue;
+                    }
+                    $dt          = \DateTime::createFromFormat('Y-m-d', $date);
+                    $isValidDate = $dt && $dt->format('Y-m-d') == $date;
+                    if (!$isValidDate) {
+                        return false;
+                    }
+                }
+            }
+        }
+        foreach ($form->formRules as $rule) {
+            if (is_callable($rule)) {
+                $violations = call_user_func($rule, $values);
+                if (!empty($violations)) {
+                    return false;
+                }
+            } else if (isset($rule["requiredIf"])) {
+                if (!$form->validateRequireIf(
+                    $rule["requiredIf"]["elements"],
+                    $rule["requiredIf"]["format"]
+                )
+                ) {
+                    return false;
+                }
+            }
+        }
         return true;
     }
 }
