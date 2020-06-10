@@ -32,14 +32,13 @@ class JSONToolkit
 {
     // TODO: Check if other option than unsafeupdate w/out escaped char
     // TODO: Fix all function descriptions
-    // TODO: Overview conditionals
     var $instrName;
     var $flagData;
 
     /**
      * JSONToolkit constructor.
      *
-     * @param string $instrumentName Name of instrument whos data to manipulate
+     * @param string $instrumentName Name of instrument whose data to manipulate
      * @throws \LorisException
      */
     function __construct(string $instrumentName)
@@ -67,10 +66,9 @@ class JSONToolkit
     /**
      * Select list of CommentIDs where a field has certain value
      *
-     * @param string $field     Name of field to look for specific value
-     * @param string $val       Value to look for for the given field
-     *
-     * @return array            List of commentIDs
+     * @param array $conditionArray     The array of conditions to meet for selection
+     *                                  Given as field => value, checks if the value at field === value
+     * @return array                    List of commentIDs
      */
     public function select($conditionArray)
     {
@@ -94,19 +92,45 @@ class JSONToolkit
     }
 
     /**
+     * Select all data where a field has certain value
+     *
+     * @param array $conditionArray     Array of conditions to meet for selection
+     *                                  Given as field => value, checks if the value at field === value
+     * @return array                    Array of instrument data with CommentID as key
+     */
+    public function selectAll(array $conditionArray)
+    {
+        $result = array();
+        foreach ($this->flagData as $cmid => $data) {
+
+            // Continue if data is empty
+            if (is_null($data['Data'])) {
+                continue;
+            }
+
+            // Array of instrument data
+            $instrData = json_decode($data['Data'], true);
+
+            if ($this->checkConditions($instrData, $conditionArray)) {
+                $result[$cmid] = $instrData;
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Select value of $selected when $field has $val
      *
-     * @param string $selected      Name of field to return values of
-     * @param string $field         Name of field to check value of
-     *                              (can be the same as $selected)
-     * @param string $val           Value of $field to check before
-     *                              returning value of $selected
-     *
-     * @return array                Array of values for $selected
-     *                              CommentID as key
+     * @param string $selected          Name of field to return values of
+     * @param array $conditionArray     Array of conditions to meet for selection
+     *                                  Given as field => value, checks if the value at field === value
+     * @return array                    Array of values for $selected
+     *                                  CommentID as key
      */
-    public function selectField($selected, $conditionArray)
-    {
+    public function selectField(
+        string $selected,
+        array $conditionArray
+    ) {
         $results = array();
         foreach ($this->flagData as $cmid => $data) {
 
@@ -131,44 +155,18 @@ class JSONToolkit
     }
 
     /**
-     * Select data where a field has certain value
-     *
-     * @param string $field     Name of field to look for specific value
-     * @param string $val       Value to look for for the given field
-     *
-     * @return array            Array of instrument data with CommentID as key
-     */
-    public function selectAll($conditionArray)
-    {
-        $result = array();
-        foreach ($this->flagData as $cmid => $data) {
-
-            // Continue if data is empty
-            if (is_null($data['Data'])) {
-                continue;
-            }
-
-            // Array of instrument data
-            $instrData = json_decode($data['Data'], true);
-
-            if ($this->checkConditions($instrData, $conditionArray)) {
-                $result[$cmid] = $instrData;
-            }
-        }
-        return $result;
-    }
-
-    /**
      * Renames field of instrument
      *
-     * @param string $oldName Name of field to rename
-     * @param string $newName What the field will be renamed as
+     * @param string $oldName   Name of field to rename
+     * @param string $newName   What the field will be renamed as
      *
      * @return int              Return number of fields altered
      * @throws \DatabaseException
      */
-    public function rename(string $oldName, string $newName)
-    {
+    public function rename(
+        string $oldName,
+        string $newName
+    ) {
         $dataAltered = 0;
         foreach ($this->flagData as $cmid => $data) {
             // Continue if data is empty
@@ -212,7 +210,7 @@ class JSONToolkit
     /**
      * Drop field from instrument data
      *
-     * @param string $field Name of field to be dropped
+     * @param string $field     Name of field to be dropped
      *
      * @return int              Return number of fields altered
      * @throws \DatabaseException
@@ -259,18 +257,22 @@ class JSONToolkit
      * (Alter value of $field to $newVal if the
      * $conditionalField has value $conditionalValue)
      *
-     * @param string $field The name of field whos data will be changed.
-     * @param string $newVal The value that the field will be changed to.
-     * @param string $conditionalField The name of field to check the value of.
-     *                                  Modification is conditional on this field.
-     * @param string $conditionalVal Value to check whether the $conditionalField has,
-     *                                  and have the modification be conditional of.
+     * @param string $field             The name of field whos data will be changed.
+     * @param string $newVal            The value that the field will be changed to.
+     * @param array $conditionArray     The array of conditions to meet for modification
+     *                                  Given as field => value, checks if the value at field === value
+     * @param bool|null $overrule       If passed as true, do not check validation. Default as false.
      *
      * @return int                      Return number of fields altered
      * @throws \DatabaseException
+     * @throws \NotFound
      */
-    public function modify($field, $newVal, $conditionArray)
-    {
+    public function modify(
+        string $field,
+        string $newVal,
+        array $conditionArray,
+        ?bool $overrule = false
+    ) {
         $dataAltered = 0;
         foreach ($this->flagData as $cmid => $data) {
 
@@ -292,8 +294,9 @@ class JSONToolkit
 
                 $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
 
-                if ($this->validate($instrData, $instrument, $field)) {
+                $validate = $overrule ? true : $this->validate($instrData, $instrument, $field);
 
+                if ($validate) {
                     $newData = json_encode($instrData);
 
                     // Update flagData variable
@@ -321,19 +324,20 @@ class JSONToolkit
      *
      * @param callable $fn                  Function containing the operation to be done
      *                                      on the specified field
-     * @param string $field The name of the field to modify
-     * @param string|null $conditionalField The field to check the value of, and have the
-     *                                      modification be conditional of
-     * @param string|null $conditionalVal Value to check whether the $conditionalField has,
-     *                                      and have the modification be conditional of
+     * @param string $field                 The name of the field to modify
+     * @param array|null $conditionArray    The array of conditions to meet for modification
+     *                                      Given as field => value, checks if the value at field === value
+     * @paran bool|null $overrule           If passed as true, do not check validation. Default as false.
      *
      * @return int                          Return number of fields altered
      * @throws \DatabaseException
+     * @throws \NotFound
      */
     public function customModify(
         callable $fn,
         string $field,
-        ?array $conditionArray = null
+        ?array $conditionArray = null,
+        ?bool $overrule = false
     ) {
         $alteredData = 0;
         foreach ($this->flagData as $cmid => $data) {
@@ -362,7 +366,9 @@ class JSONToolkit
             $newData = json_encode($instrData);
 
             $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
-            if ($this->validate($instrData, $instrument, $field)) {
+
+            $validate = $overrule ? true : $this->validate($instrData, $instrument, $field);
+            if ($validate) {
 
                 // Update flagData variable
                 $this->flagdata[$cmid]['Data'] = $newData;
@@ -392,7 +398,7 @@ class JSONToolkit
      *
      * @return bool             Return true if status field found
      */
-    public function checkStatusField($field)
+    public function checkStatusField(string $field)
     {
         foreach ($this->flagData as $cmid => $data) {
 
@@ -414,15 +420,18 @@ class JSONToolkit
     }
 
     /**
-     * Check if there is a status field in
-     * an instrument's data for a given fieldname
-     * (e.g. $field "name" given: search for "name_status")
+     * Checks whether all conditions are met in an array of data
      *
-     * @param string $field     Name of the field to check for relative status field
+     * @param array $data               The array of data to parse through for conditions
+     * @param array $conditionArray     The conditions to check for in the data
+     *                                  Given as field => value, checks if the value at field === value
      *
-     * @return bool             Return true if status field found
+     * @return bool                     Return true if all conditions met
      */
-    public function checkConditions($data, $conditionArray) {
+    public function checkConditions(
+        array $data,
+        array $conditionArray
+    ) {
         $pass = true;
 
         // Check each condition in array
@@ -441,28 +450,38 @@ class JSONToolkit
         return $pass;
     }
 
-    // TODO: fix this function description
     /**
      * Make sure fields are of the correct data type
      *
-     * @param $data
-     * @param $instrument
+     * @param array $data
+     * @param object $instrument
+     * @param string $field
      * @return bool
      */
-    public function validate($data, $instrument, $field) {
+    public function validate(
+        array $data,
+        object $instrument,
+        string $field
+    ) {
         $form = $instrument->form;
         $values = $data;
-        // TODO: check for if key exists
-        // TODO: Decide what happens if key does not exist
-        // TODO: unset instrument_title from $form->form
         unset($form->form['instrument_title']);
-
         foreach ($form->form as $elName => $el) {
             if ($el['type'] === 'group') {
-                // TODO: only look at relevant field
+
+                // Check if the right field exists
+                if(!in_array($field, array_column($el['elements'], 'name'))) {
+                    continue;
+                }
+
                 if (isset($el['required'])) {
                     foreach ($el['required'] as $elementIndex) {
                         $childEl  = $el['elements'][$elementIndex];
+                        // only check if right field
+                        if($childEl['name'] !== $field) {
+                            continue;
+                        }
+
                         $childVal = $values[$childEl['name']];
                         if ($childVal === null || $childVal === '') {
                             return false;
@@ -473,6 +492,10 @@ class JSONToolkit
                 if (isset($el['numeric'])) {
                     foreach ($el['numeric'] as $elementIndex) {
                         $childEl = $el['elements'][$elementIndex];
+                        // only check if right field
+                        if($childEl['name'] !== $field) {
+                            continue;
+                        }
                         if (!is_numeric($values[$childEl['name']])
                             && !empty($values[$childEl['name']])
                         ) {
@@ -486,7 +509,6 @@ class JSONToolkit
                 } elseif ($el['name'] !== $field) {
                     continue;
                 }
-
                 $value = $values[$el['name']];
                 if (isset($el['required'])
                     && $el['required'] === true
@@ -548,12 +570,15 @@ class JSONToolkit
             }
         }
         foreach ($form->formRules as $rule) {
-            if (is_callable($rule)) {
-                $violations = call_user_func($rule, $values);
-                if (!empty($violations)) {
-                    return false;
-                }
-            } else if (isset($rule["requiredIf"])) {
+            //TODO: figure out how to do this. It was giving an error because Window_difference was set to 0.
+//            if (is_callable($rule)) {
+//                $violations = call_user_func($rule, $values);
+//                print_r($violations);
+//                if (!empty($violations)) {
+//                    return false;
+//                }
+//            } else
+            if (isset($rule["requiredIf"])) {
                 if (!$form->validateRequireIf(
                     $rule["requiredIf"]["elements"],
                     $rule["requiredIf"]["format"]

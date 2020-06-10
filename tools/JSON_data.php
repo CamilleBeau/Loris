@@ -18,8 +18,6 @@ require_once "JSONToolkit.class.inc";
 
 use LORIS\JSONToolkit;
 
-// TODO: Convert conditions to array
-
 // Help message
 if(count($argv) <  3 || $argv[1] === 'help') {
     showHelp();
@@ -47,13 +45,32 @@ switch ($action) {
         $field = $argv[3];
         $val = $argv[4];
 
+        $conditions = array($field => $val);
         // Execute action, set array of commentIDs
-        $cmids = $toolkit->select($field, $val);
+        $cmids = $toolkit->select($conditions);
         print_r(
             "The following is a list of CommentIDs where the field $field ".
             "has the value $val in the instrument $test_name:\n"
         );
         print_r($cmids);
+        break;
+
+    case 'selectall':
+        if (count($argv) !== 5) {
+            showHelp();
+        }
+        $field = $argv[3];
+        $val = $argv[4];
+
+        $conditions = array($field => $val);
+
+        // Perform action, set results array
+        $results = $toolkit->selectAll($conditions);
+        print_r(
+            "The following is a list of CommentIDs and full data where the field ".
+            "$field has the value $val in the instrument $test_name:\n"
+        );
+        print_r($results);
         break;
 
     case 'selectfield':
@@ -64,27 +81,13 @@ switch ($action) {
         $field = $argv[4];
         $val = $argv[5];
 
+        $conditions = array($field => $val);
+
         // Perform action, set results array
-        $results = $toolkit->selectField($selected, $field, $val);
+        $results = $toolkit->selectField($selected, $conditions);
         print_r(
             "The following is a list of CommentIDs and values for field $selected ".
             "where the field $field has the value $val in the instrument $test_name:\n"
-        );
-        print_r($results);
-        break;
-
-    case 'selectall':
-        if (count($argv) !== 5) {
-            showHelp();
-        }
-        $field = $argv[3];
-        $val = $argv[4];
-
-        // Perform action, set results array
-        $results = $toolkit->selectAll($field, $val);
-        print_r(
-            "The following is a list of CommentIDs and full data where the field ".
-            "$field has the value $val in the instrument $test_name:\n"
         );
         print_r($results);
         break;
@@ -134,7 +137,7 @@ switch ($action) {
         break;
 
     case 'modify':
-        if (count($argv) !== 7) {
+        if (count($argv) !== 7 && count($argv) !== 8) {
             showHelp();
         }
 
@@ -143,12 +146,16 @@ switch ($action) {
         $conditionalField = $argv[5];
         $conditionalVal = $argv[6];
 
+        $overrule = isset($argv[7]) && $argv[7] === 'overrule' ? true : false;
+
+        $conditions = array($conditionalField => $conditionalVal);
+
         // Execute command & get number of fields changed
         $fieldsChanged = $toolkit->modify(
             $field,
             $newVal,
-            $conditionalField,
-            $conditionalVal
+            $conditions,
+            $overrule
         );
         if($fieldsChanged) {
             print_r("The command was performed with $fieldsChanged changes made.\n");
@@ -167,7 +174,7 @@ switch ($action) {
         break;
 
     case 'custommodify':
-        if (count($argv) !== 6 && count($argv) !== 8) {
+        if (count($argv) < 6 || count($argv) > 9) {
             showHelp();
         }
 
@@ -211,18 +218,23 @@ switch ($action) {
         if(isset($argv[6]) && isset($argv[7])) {
             $conditionalField = $argv[6];
             $conditionalVal = $argv[7];
+            $overrule = isset($argv[8]) && $argv[8] === 'overrule' ? true : false;
+            $conditions = array($conditionalField => $conditionalVal);
+
             // Execute action and get number of changes
             $fieldsChanged = $toolkit->customModify(
                 $fn,
                 $field,
-                $conditionalField,
-                $conditionalVal
+                $conditions,
+                $overrule
             );
         } else {
+            $overrule = isset($argv[6]) && $argv[6] === 'overrule' ? true : false;
             // Execute action and get number of changes
             $fieldsChanged = $toolkit->customModify(
                 $fn,
-                $field
+                $field,
+                $overrule
             );
         }
         // Print how many changes made (if any)
@@ -258,24 +270,24 @@ php JSON_data.php help
 ACTIONS
 Select:         php JSON_data.php [tbl] select [field] [value]
                 -   Select CommentIDs for instrument [tbl] where [field] has value [value]
-                
+SelectAll:      php JSON_data.php [tbl] selectAll [field] [value]
+                -   Select full data for instrument [tbl] where [conField] has value [value]
 SelectField:    php JSON_data.php [tbl] select [field] [conField] [value]
                 -   Select CommentIDs and the value of [field] for instrument [tbl] where 
-                    [conField] has value [value]
-                    
+                    [conField] has value [value]                    
 Rename:         php JSON_data.php [tbl] rename [oldName] [newName]
                 -   Rename the field [oldName] to [newName] in instrument [tbl]
                 
 Drop:           php JSON_data.php [tbl] drop [field]
                 -   Drop [field] for instrument [instr]. NOTE: data will be lost for this field
                 
-Modify:         php JSON_data.php [tbl] modify [field] [newVal] [conField] [conVal]
+Modify:         php JSON_data.php [tbl] modify [field] [newVal] [conField] [conVal] 
                 -   Set [field] to [newVal] where [conField] has value [conVal] for instrument [tbl]
                 
-customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal] 
+customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal] [overrule]**
                 -   Perform [operation]* with value [opVal] on [field] in instrument [tbl]
                 
-                php JSON_data.php [tbl] customModify [field] [operation] [opVal] [conField] [conVal]
+                php JSON_data.php [tbl] customModify [field] [operation] [opVal] [conField] [conVal] [overrule]**
                 -   Perform [operation]* with value [opVal] on [field] in instrument [tbl] 
                     when [conField] has value [conVal]
                     
@@ -284,7 +296,8 @@ customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal]
                     multiply    Multiple field by [opVal]
                     divide      Divide field by [opVal]
                     concat      Concatenate field with [opVal] 
-
+                
+                ** The keyword 'overrule' can be used as the last argument to bypass validation.
 USAGE;
     die();
 }
