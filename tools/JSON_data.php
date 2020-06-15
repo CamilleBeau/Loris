@@ -161,9 +161,9 @@ switch ($action) {
             print_r("The command was performed with $fieldsChanged changes made.\n");
         } else {
             print_r(
-                "No changes were made in the database. The field $field and/or ".
-                "$conditionalField may not exist, or the field $conditionalField ".
-                "may never have the value $conditionalVal\n"
+                "No changes were made in the database. Possible reasons include field ".
+                "$field and/or $conditionalField do not exist, the field $conditionalField ".
+                "never has the value $conditionalVal, or the field $field already has the value $newVal\n"
             );
         }
 

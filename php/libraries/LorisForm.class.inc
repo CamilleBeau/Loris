@@ -1187,14 +1187,22 @@ class LorisForm
     /**
      * Reimplements the HTML_QuickForm validate API.
      *
+     * @param array|null $values    Optional array of values to validate
+     *
      * @return bool true if all registered rules passed
      */
-    function validate()
+    function validate(?array $vals = null)
     {
-        if (!$this->isSubmitted()) {
-            return false;
+        if(isset($vals)) {
+            $this->setDefaults($vals);
+            $values = $vals;
+        } else {
+            if (!$this->isSubmitted()) {
+                return false;
+            }
+            $values = $this->getSubmitValues();
         }
-        $values = $this->getSubmitValues();
+
         $errors = array();
         foreach ($this->form as $elName => $el) {
             if ($el['type'] === 'group') {
@@ -1315,6 +1323,7 @@ class LorisForm
         foreach ($this->formRules as $rule) {
             if (is_callable($rule)) {
                 $violations = call_user_func($rule, $values);
+                print_r($violations);
                 if (!empty($violations)) {
                     foreach ($violations as $element => $msg) {
                         $this->setElementError($element, $msg);
@@ -1335,6 +1344,7 @@ class LorisForm
                 }
             }
         }
+        print_r($errors);
         return empty($errors);
     }
 
