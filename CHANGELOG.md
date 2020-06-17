@@ -1,5 +1,32 @@
 # CHANGELOG
 
+- ***When adding content to this document, make sure to create a section for each module 
+if the changes only impact a single module and that section does not already exist in
+the document. When changes affect the entire software, make sure to add them in the 
+core section.***
+
+- ***When possible please provide the number of the pull request(s) containing the 
+changes in the following format: PR #1234***
+
+##LORIS 24.0 (Release Date: ??)
+### Core
+#### Features
+- *Add item here*
+#### Updates and Improvements
+- *Add item here*
+#### Bug Fixes
+- *Add item here*
+### Modules
+#### Issue Tracker
+- Readability of comments and history was improved. (PR #6138)
+### Clean Up
+- *Add item here*
+### Notes For Existing Projects
+- *Add item here*
+### Notes For Developers
+- *Add item here*
+
+
 ## LORIS 23.0.0 (Release Date: 2020-06-12)
 
 ### Core

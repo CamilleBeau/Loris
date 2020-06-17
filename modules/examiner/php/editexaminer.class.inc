@@ -264,7 +264,6 @@ class EditExaminer extends \NDB_Form
                 }
             }
         }
-
         header("Refresh:0");
     }
 

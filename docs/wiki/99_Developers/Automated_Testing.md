@@ -16,6 +16,9 @@ Generally there are two categories of testing, **static** and **dynamic**. The f
 
 Static tests can be executed by running `make checkstatic` in the LORIS root diretory. This command will also use PHP's default linter (`php -l`) to check for basic syntax errors.
 
+If you run the command `git config core.hooksPath .githooks`, git will automatically
+run `make checkstatic` when you do a git push.
+
 We use the following tools for static analysis.
 
 ### PHP
@@ -87,6 +90,7 @@ We use Docker to help us simulate a server running LORIS. The installation and u
 ### Unit Tests
 
 LORIS uses the [PHPUnit library](https://phpunit.de/) for unit tests.
+
 
 Unit testing is covered in depth in our [Unit Test Guide](/test/UnitTestGuide.md).
 
