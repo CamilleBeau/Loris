@@ -1323,7 +1323,6 @@ class LorisForm
         foreach ($this->formRules as $rule) {
             if (is_callable($rule)) {
                 $violations = call_user_func($rule, $values);
-                print_r($violations);
                 if (!empty($violations)) {
                     foreach ($violations as $element => $msg) {
                         $this->setElementError($element, $msg);
@@ -1344,7 +1343,6 @@ class LorisForm
                 }
             }
         }
-        print_r($errors);
         return empty($errors);
     }
 

@@ -99,6 +99,11 @@ switch ($action) {
         $oldName = $argv[3];
         $newName = $argv[4];
 
+        // Do not rename if metadata field
+        if($toolkit->checkMetaData($oldName) || $toolkit->checkMetaData($newName)) {
+            $this->metaDataError();
+        }
+
         // Execute command & get number of changes
         $fieldsChanged = $toolkit->rename($oldName, $newName);
         if($fieldsChanged) {
@@ -120,7 +125,13 @@ switch ($action) {
         if (count($argv) != 4) {
             showHelp();
         }
+
         $field = $argv[3];
+
+        // Do not drop if metadata field
+        if($toolkit->checkMetaData($field)) {
+            $this->metaDataError();
+        }
 
         // Execute command & get number of changes
         $fieldsChanged = $toolkit->drop($field);
@@ -145,6 +156,11 @@ switch ($action) {
         $newVal = $argv[4];
         $conditionalField = $argv[5];
         $conditionalVal = $argv[6];
+
+        // Do not modify if metadata field
+        if($toolkit->checkMetaData($field)) {
+            $this->metaDataError();
+        }
 
         $overrule = isset($argv[7]) && $argv[7] === 'overrule' ? true : false;
 
@@ -182,6 +198,11 @@ switch ($action) {
         $operation = $argv[4];
         $opVal = $argv[5];
         $fn;
+
+        // Do not modify if metadata field
+        if($toolkit->checkMetaData($field)) {
+            $this->metaDataError();
+        }
 
         // Set anonymous function
         if ($operation === 'add') {
@@ -299,6 +320,14 @@ customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal]
                 
                 ** The keyword 'overrule' can be used as the last argument to bypass validation.
 USAGE;
+    die();
+}
+
+function metaDataError() {
+    print_r("#########################################################\n");
+    print_r("Can not alter metadata values:\n");
+    print_r("Date_taken \nExaminer \nCandidate_Age \nWindow_Difference");
+    print_r("#########################################################\n");
     die();
 }
 ?>

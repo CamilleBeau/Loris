@@ -48,7 +48,7 @@ class JSONToolkit
             array("tbln" => $instrumentName)
         );
         if (empty($checkInstrument)) {
-            throw new Exception("The instrument ". $instrumentName . "was not found in the database.");
+            throw new \Exception("The instrument ". $instrumentName . "was not found in the database.");
         }
 
         $queryData = $db->pselectWithIndexKey(
@@ -130,6 +130,7 @@ class JSONToolkit
         string $oldName,
         string $newName
     ) : int {
+
         $fn = function($instrData, $oldName) use($newName) {
             if(!key_exists($newName, $instrData)) {
                 $fieldNames = array_keys($instrData);
@@ -211,6 +212,12 @@ class JSONToolkit
         string $field,
         callable $fn
     ) : int {
+
+        // Do not modify if metadata field
+        if($this->checkMetaData($field)) {
+            throw new \Exception("Modification of metadata field forbidden.");
+        }
+
         $dataAltered = 0;
 
         foreach ($this->flagData as $cmid => $data) {
@@ -271,6 +278,12 @@ class JSONToolkit
         array $conditionArray,
         ?bool $overrule = false
     ) : int {
+
+        // Do not modify if metadata field
+        if($this->checkMetaData($field)) {
+            throw new \Exception("Modification of metadata field forbidden.");
+        }
+
         $dataAltered = 0;
         foreach ($this->flagData as $cmid => $data) {
 
@@ -297,8 +310,16 @@ class JSONToolkit
 
                 $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
 
-                print_r($instrData);
-                $validated = $overrule ? true : $instrument->form->validate($instrData);
+                // Unset metadata fields before validating
+                $validationData = $instrData;
+                unset(
+                    $validationData['Window_Difference'],
+                    $validationData['Examiner'],
+                    $validationData['Candidate_Age'],
+                    $validationData['Date_taken']
+                );
+
+                $validated = $overrule ? true : $instrument->form->validate($validationData);
 
                 // If validated, save values
                 if ($validated) {
@@ -345,6 +366,12 @@ class JSONToolkit
         ?array $conditionArray = null,
         ?bool $overrule = false
     ) : int {
+
+        // Do not modify if metadata field
+        if($this->checkMetaData($field)) {
+            throw new  \Exception("Modification of metadata field forbidden.");
+        }
+
         $dataAltered = 0;
         foreach ($this->flagData as $cmid => $data) {
             // Continue if data is empty
@@ -366,11 +393,12 @@ class JSONToolkit
                         continue;
             }
 
-            $newVal = $fn($intrData[$field]);
+            $newVal = $fn($instrData[$field]);
 
             // If field already has the new value, continue
             $alreadyEqual = ($instrData[$field] === $newVal ||
                 (!isset($instrData[$field]) && $newVal === 'null'));
+
             if($alreadyEqual) {
                 continue;
             }
@@ -380,14 +408,23 @@ class JSONToolkit
 
             $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
 
-            $validated = $overrule ? true : $instrument->form->validate($instrData);
+            // Unset metadata fields before validating
+            $validationData = $instrData;
+            unset(
+                $validationData['Window_Difference'],
+                $validationData['Examiner'],
+                $validationData['Candidate_Age'],
+                $validationData['Date_taken']
+            );
+
+            $validated = $overrule ? true : $instrument->form->validate($validationData);
 
             // if validated, save values
             if ($validated) {
                 $instrument->_saveValues($instrData);
                 $dataAltered++;
             } else {
-                throw new Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
+                throw new \Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
             }
         }
 
@@ -465,4 +502,22 @@ class JSONToolkit
         }
         return $pass;
     }
+
+    /**
+     * Checks whether the field passed is a metadata field
+     *
+     * @param string $field     The field to check
+     *
+     * @return bool             Return true if metadata field
+     */
+    public function checkMetaData(string $field) : bool {
+        $metaDataFields = array(
+            'Date_taken',
+            'Examiner',
+            'Candidate_Age',
+            'Window_Difference'
+        );
+        return in_array($field, $metaDataFields);
+    }
+
 }
