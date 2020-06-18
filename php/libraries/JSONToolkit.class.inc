@@ -32,6 +32,12 @@ class JSONToolkit
 {
     var $instrName;
     var $flagData;
+    var $metadataFields = array(
+        'Date_taken',
+        'Examiner',
+        'Candidate_Age',
+        'Window_Difference'
+    );
 
     /**
      * JSONToolkit constructor.
@@ -68,13 +74,13 @@ class JSONToolkit
      *                                  Given as field => value, checks if the value at field === value
      * @return array                    List of commentIDs
      */
-    public function select(array $conditionArray) : array
+    public function selectCMIDs(array $conditionArray) : array
     {
-        return $this->genericSelect(
-            $conditionArray,
-            function(& $cmids, $cmid, $instrData) {
-                $cmids[] = $cmid;
-            });
+        // Function specifying what to select
+        $fn = function(& $cmids, $cmid, $instrData) {
+            $cmids[] = $cmid;
+        };
+        return $this->genericSelect($conditionArray, $fn);
     }
 
     /**
@@ -86,11 +92,11 @@ class JSONToolkit
      */
     public function selectAll(array $conditionArray) : array
     {
-        return $this->genericSelect(
-            $conditionArray,
-            function(& $results, $cmid, $instrData) {
-                $results[$cmid] = $instrData;
-            });
+        // Function specifying what to select
+        $fn = function(& $results, $cmid, $instrData) {
+            $results[$cmid] = $instrData;
+        };
+        return $this->genericSelect($conditionArray, $fn);
     }
 
     /**
@@ -106,16 +112,46 @@ class JSONToolkit
         string $selected,
         array $conditionArray
     ) : array {
-        return $this->genericSelect(
-            $conditionArray,
-            function(& $results, $cmid, $instrData) use($selected) {
-                if(key_exists($selected, $instrData)) {
-                    $results[$cmid] = $instrData[$selected];
-                }
-            });
+        // Function specifying what to select
+        $fn = function(& $results, $cmid, $instrData) use($selected) {
+            if(key_exists($selected, $instrData)) {
+                $results[$cmid] = $instrData[$selected];
+            }
+        };
+        return $this->genericSelect($conditionArray, $fn);
     }
 
+    /**
+     * Generic method for selecting values that meet conditions
+     * Customization through function parameter
+     *
+     * @param array $conditionArray     Array of conditions to meet for selection
+     *                                  Given as field => value, checks if the value at field === value
+     * @param callable $fn              Function that specifies how the return array is constructed
+     *
+     * @return array                    Array of values that meet conditions, constructed by $fn
+     *                                  CommentID as key.
+     */
+    public function genericSelect(
+        array $conditionArray,
+        callable $fn
+    ) : array {
+        $results = array();
+        foreach ($this->flagData as $cmid => $data) {
+            if (is_null($data['Data'])) {
+                continue;
+            }
 
+            // array of instrument data
+            $instrData = json_decode($data['Data'], true);
+
+            // perform operation from anonymous function if conditions are met
+            if ($this->checkConditions($instrData, $conditionArray)) {
+                $fn($results, $cmid, $instrData);
+            }
+        }
+        return $results;
+    }
 
     /**
      * Renames field of instrument
@@ -130,14 +166,17 @@ class JSONToolkit
         string $oldName,
         string $newName
     ) : int {
-
+        // Function specifying rename operation
         $fn = function($instrData, $oldName) use($newName) {
+            // Make sure a field $newName does not already exist
             if(!key_exists($newName, $instrData)) {
+                // rename field in array
                 $fieldNames = array_keys($instrData);
                 $fieldNames[array_search($oldName, $fieldNames)] = $newName;
                 $instrData = array_combine($fieldNames, $instrData);
                 return $instrData;
             } else {
+                // return null if no change is made
                 return null;
             }
         };
@@ -158,44 +197,12 @@ class JSONToolkit
      */
     public function drop(string $field) : int
     {
-        return $this->genericOperation(
-            $field,
-            function($instrData, $field) {
-                unset($instrData[$field]);
-                return $instrData;
-            });
-    }
-
-    /**
-     * Generic method for selecting values that meet conditions
-     * Customization through function parameter
-     *
-     * @param array $conditionArray     Array of conditions to meet for selection
-     *                                  Given as field => value, checks if the value at field === value
-     * @param callable $fn              Function that specifies how the return array is constructed
-     *
-     * @return array                    Array of values that meet conditions, constructed by $fn
-     *                                  CommentID as key.
-     */
-    public function genericSelect(
-        array $conditionArray,
-        callable $fn
-    ) : int {
-        $results = array();
-        foreach ($this->flagData as $cmid => $data) {
-            if (is_null($data['Data'])) {
-                continue;
-            }
-
-            // array of instrument data
-            $instrData = json_decode($data['Data'], true);
-
-            // perform operation from anonymous function if conditions are met
-            if ($this->checkConditions($instrData, $conditionArray)) {
-                $fn($results, $cmid, $instrData);
-            }
-        }
-        return $results;
+        // Function specifying drop operation
+        $fn = function($instrData, $field) {
+            unset($instrData[$field]);
+            return $instrData;
+        };
+        return $this->genericOperation($field, $fn);
     }
 
     /**
@@ -235,8 +242,21 @@ class JSONToolkit
                 // set instrument data using function parameter
                 $instrData = $fn($instrData, $field);
 
-                // if the function returned data, update values
-                if(isset($instrData)) {
+                if (!isset($instrData)) {
+                    continue;
+                }
+
+                $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
+
+                // Unset metadata fields for validation
+                $validationData = $instrData;
+                foreach ($this->metadataFields as $meta) {
+                    unset($validationData[$meta]);
+                }
+
+                // If valid, save values
+                if ($instrument->form->validate($validationData)) {
+                    // update values
                     $newData = json_encode($instrData);
 
                     // Update flagData variable
@@ -250,8 +270,15 @@ class JSONToolkit
                         array("CommentID" => $cmid)
                     );
                     $dataAltered++;
+                    $instrument->score();
+                } else {
+                    throw new \Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
                 }
             }
+        }
+
+        if($dataAltered) {
+            $this->resetFlag();
         }
         return $dataAltered;
     }
@@ -265,7 +292,6 @@ class JSONToolkit
      * @param string $newVal            The value that the field will be changed to.
      * @param array $conditionArray     The array of conditions to meet for modification
      *                                  Given as field => value, checks if the value at field === value
-     * @param bool|null $overrule       If passed as true, do not check validation. Default as false.
      *
      * @return int                      Return number of fields altered
      * @throws \DatabaseException
@@ -275,73 +301,17 @@ class JSONToolkit
     public function modify(
         string $field,
         string $newVal,
-        array $conditionArray,
-        ?bool $overrule = false
+        array $conditionArray
     ) : int {
-
-        // Do not modify if metadata field
-        if($this->checkMetaData($field)) {
-            throw new \Exception("Modification of metadata field forbidden.");
-        }
-
-        $dataAltered = 0;
-        foreach ($this->flagData as $cmid => $data) {
-
-            // Continue if data is empty
-            if (is_null($data['Data'])) {
-                continue;
-            }
-
-            // Array of instrument data
-            $instrData = json_decode($data['Data'], true);
-            if (!key_exists($field, $instrData)) {
-                continue;
-            }
-
-
-            $alreadyEqual = ($instrData[$field] === $newVal ||
-                (!isset($instrData[$field]) && $newVal === 'null'));
-            // Before modifying, check that conditions are met,
-            // and that the field does not already have new value.
-            if ($this->checkConditions($instrData, $conditionArray) &&
-                !$alreadyEqual) {
-                // set new value (check if null)
-                $instrData[$field] = $newVal === 'null' ? null : $newVal;
-
-                $instrument = \NDB_BVL_Instrument::factory($this->instrName, $cmid, '', true);
-
-                // Unset metadata fields before validating
-                $validationData = $instrData;
-                unset(
-                    $validationData['Window_Difference'],
-                    $validationData['Examiner'],
-                    $validationData['Candidate_Age'],
-                    $validationData['Date_taken']
-                );
-
-                $validated = $overrule ? true : $instrument->form->validate($validationData);
-
-                // If validated, save values
-                if ($validated) {
-                    $instrument->_saveValues($instrData);
-                    $dataAltered++;
-                } else {
-                    throw new \Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
-                }
-            }
-        }
-
-        // If any data was altered, reset the flag data to reflect new values
-        if($dataAltered) {
-            $db = \Database::singleton();
-            $queryData = $db->pselectWithIndexKey(
-                "SELECT CommentID, Data FROM flag WHERE Test_name =:tbln",
-                array("tbln" => $this->instrName),
-                'CommentID'
-            );
-            $this->flagData = $queryData;
-        }
-        return $dataAltered;
+        // Simple modification function setting field to new value
+        $fn = function($value) use($newVal) {
+            return $newVal === 'null' ? null : $newVal;
+        };
+        return $this->customModify(
+            $fn,
+            $field,
+            $conditionArray
+        );
     }
 
     /**
@@ -352,7 +322,6 @@ class JSONToolkit
      * @param string $field                 The name of the field to modify
      * @param array|null $conditionArray    The array of conditions to meet for modification
      *                                      Given as field => value, checks if the value at field === value
-     * @param bool|null $overrule           If passed as true, do not check validation. Default as false.
      *
      * @return int                          Return number of fields altered
      * @throws \DatabaseException
@@ -363,8 +332,7 @@ class JSONToolkit
     public function customModify(
         callable $fn,
         string $field,
-        ?array $conditionArray = null,
-        ?bool $overrule = false
+        ?array $conditionArray = null
     ) : int {
 
         // Do not modify if metadata field
@@ -382,24 +350,21 @@ class JSONToolkit
             // Array of instrument data
             $instrData = json_decode($data['Data'], true);
 
+            // Continue if field does not exist
             if (!key_exists($field, $instrData)) {
                 continue;
             }
 
-            // If conditionals are given, only alter data if the
-            // conditions are met. Otherwise, continue.
+            // If conditions given, check if conditions are met
             if (isset($conditionArray) && !$this->checkConditions($instrData, $conditionArray)) {
-                // make sure key exists before checking value
-                        continue;
+                continue;
             }
 
+            $oldVal = $instrData[$field];
             $newVal = $fn($instrData[$field]);
 
             // If field already has the new value, continue
-            $alreadyEqual = ($instrData[$field] === $newVal ||
-                (!isset($instrData[$field]) && $newVal === 'null'));
-
-            if($alreadyEqual) {
+            if($newVal === $oldVal) {
                 continue;
             }
 
@@ -410,37 +375,26 @@ class JSONToolkit
 
             // Unset metadata fields before validating
             $validationData = $instrData;
-            unset(
-                $validationData['Window_Difference'],
-                $validationData['Examiner'],
-                $validationData['Candidate_Age'],
-                $validationData['Date_taken']
-            );
-
-            $validated = $overrule ? true : $instrument->form->validate($validationData);
+            foreach ($this->metadataFields as $meta) {
+                unset($validationData[$meta]);
+            }
 
             // if validated, save values
-            if ($validated) {
+            if ($instrument->form->validate($validationData)) {
                 $instrument->_saveValues($instrData);
                 $dataAltered++;
+                $instrument->score();
             } else {
                 throw new \Exception("Operation can not be performed due to a validation error for CommentID $cmid.");
             }
         }
-
-        // If any data was altered, reset the flag data to reflect new values
+        // If any data was altered, reset the flag data variable
         if($dataAltered) {
-            $db = \Database::singleton();
-            $queryData = $db->pselectWithIndexKey(
-                "SELECT CommentID, Data FROM flag WHERE Test_name =:tbln",
-                array("tbln" => $this->instrName),
-                'CommentID'
-            );
-            $this->flagData = $queryData;
+            $this->resetFlag();
         }
-
         return $dataAltered;
     }
+
 
     /**
      * Check if there is a status field in
@@ -454,8 +408,6 @@ class JSONToolkit
     public function checkStatusField(string $field) : bool
     {
         foreach ($this->flagData as $cmid => $data) {
-
-            // Continue if data is empty
             if (is_null($data['Data'])) {
                 continue;
             }
@@ -468,7 +420,6 @@ class JSONToolkit
                 return true;
             }
         }
-        // return false if no status field found
         return false;
     }
 
@@ -487,12 +438,11 @@ class JSONToolkit
     ) : bool {
         $pass = true;
 
-        // Check each condition in array
         foreach($conditionArray as $field => $value) {
             if (!key_exists($field, $data)) {
                 // if the field does not exist in the data, condition not met
                 $pass = false;
-            } elseif ($data[$field] !== $value &&
+            } elseif ($data[$field] != $value &&
                 !($value === 'null' && empty($data[$field]))
             ) {
                 // if the value does not match the data value, condition not met
@@ -510,14 +460,22 @@ class JSONToolkit
      *
      * @return bool             Return true if metadata field
      */
-    public function checkMetaData(string $field) : bool {
-        $metaDataFields = array(
-            'Date_taken',
-            'Examiner',
-            'Candidate_Age',
-            'Window_Difference'
-        );
-        return in_array($field, $metaDataFields);
+    public function checkMetaData(string $field) : bool
+    {
+        return in_array($field, $this->metadataFields);
     }
 
+    /**
+     * Resets flagData variable with query to DB
+     */
+    public function resetFlag() : void
+    {
+        $db = \Database::singleton();
+        $queryData = $db->pselectWithIndexKey(
+            "SELECT CommentID, Data FROM flag WHERE Test_name =:tbln",
+            array("tbln" => $this->instrName),
+            'CommentID'
+        );
+        $this->flagData = $queryData;
+    }
 }

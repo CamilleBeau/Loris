@@ -47,11 +47,11 @@ switch ($action) {
 
         $conditions = array($field => $val);
         // Execute action, set array of commentIDs
-        $cmids = $toolkit->select($conditions);
-        print_r(
-            "The following is a list of CommentIDs where the field $field ".
-            "has the value $val in the instrument $test_name:\n"
-        );
+        $cmids = $toolkit->selectCMIDs($conditions);
+        print_r("\n#########################################################\n");
+        print_r("The following is a list of CommentIDs where the field\n".
+            "$field has the value $val in the instrument $test_name:\n");
+        print_r("#########################################################\n");
         print_r($cmids);
         break;
 
@@ -66,10 +66,11 @@ switch ($action) {
 
         // Perform action, set results array
         $results = $toolkit->selectAll($conditions);
-        print_r(
-            "The following is a list of CommentIDs and full data where the field ".
-            "$field has the value $val in the instrument $test_name:\n"
-        );
+        print_r("\n#########################################################\n");
+        print_r("The following is a list of CommentIDs and full data\n".
+            "where the field $field has the value $val \n".
+            "in the instrument $test_name:\n");
+        print_r("#########################################################\n");
         print_r($results);
         break;
 
@@ -85,10 +86,11 @@ switch ($action) {
 
         // Perform action, set results array
         $results = $toolkit->selectField($selected, $conditions);
-        print_r(
-            "The following is a list of CommentIDs and values for field $selected ".
-            "where the field $field has the value $val in the instrument $test_name:\n"
-        );
+        print_r("\n#########################################################\n");
+        print_r("The following is a list of CommentIDs and values for field $selected ".
+            "where the field $field has the value $val in the instrument $test_name:\n");
+        print_r("#########################################################\n");
+
         print_r($results);
         break;
 
@@ -101,18 +103,21 @@ switch ($action) {
 
         // Do not rename if metadata field
         if($toolkit->checkMetaData($oldName) || $toolkit->checkMetaData($newName)) {
-            $this->metaDataError();
+            metaDataMessage();
         }
 
         // Execute command & get number of changes
         $fieldsChanged = $toolkit->rename($oldName, $newName);
         if($fieldsChanged) {
+            print_r("\n#########################################################\n");
             print_r("The command was performed with $fieldsChanged changes made.\n");
+            print_r("#########################################################\n");
         } else {
-            print_r(
-                "No changes were made in the database. The field $oldName may not ".
-                "exist or there may already be a field named $newName \n"
-            );
+            print_r("\n#########################################################\n");
+            print_r("\nNo changes were made in the database. The field $oldName may not ".
+                "exist or there may already be a field named $newName \n");
+            print_r("#########################################################\n");
+
         }
 
         // Check for status field
@@ -130,15 +135,19 @@ switch ($action) {
 
         // Do not drop if metadata field
         if($toolkit->checkMetaData($field)) {
-            $this->metaDataError();
+            metaDataMessage();
         }
 
         // Execute command & get number of changes
         $fieldsChanged = $toolkit->drop($field);
         if($fieldsChanged) {
+            print_r("\n#########################################################\n");
             print_r("The command was performed with $fieldsChanged changes made.\n");
+            print_r("#########################################################\n");
         } else {
-            print_r("No changes were made in the database. The field $field was not found.\n");
+            print_r("\n#########################################################\n");
+            print_r("\nNo changes were made in the database. The field $field was not found.\n");
+            print_r("#########################################################\n");
         }
 
         // Check for status field
@@ -148,7 +157,7 @@ switch ($action) {
         break;
 
     case 'modify':
-        if (count($argv) !== 7 && count($argv) !== 8) {
+        if (count($argv) !== 7) {
             showHelp();
         }
 
@@ -159,10 +168,8 @@ switch ($action) {
 
         // Do not modify if metadata field
         if($toolkit->checkMetaData($field)) {
-            $this->metaDataError();
+            metaDataMessage();
         }
-
-        $overrule = isset($argv[7]) && $argv[7] === 'overrule' ? true : false;
 
         $conditions = array($conditionalField => $conditionalVal);
 
@@ -170,17 +177,20 @@ switch ($action) {
         $fieldsChanged = $toolkit->modify(
             $field,
             $newVal,
-            $conditions,
-            $overrule
+            $conditions
         );
+
         if($fieldsChanged) {
+            print_r("\n#########################################################\n");
             print_r("The command was performed with $fieldsChanged changes made.\n");
+            print_r("#########################################################\n");
         } else {
-            print_r(
-                "No changes were made in the database. Possible reasons include field ".
+            print_r("\n#########################################################\n");
+            print_r("\nNo changes were made in the database. Possible reasons include field ".
                 "$field and/or $conditionalField do not exist, the field $conditionalField ".
-                "never has the value $conditionalVal, or the field $field already has the value $newVal\n"
-            );
+                "never has the value $conditionalVal, or the field $field already has the value $newVal\n");
+            print_r("#########################################################\n");
+
         }
 
         // Check for status field
@@ -190,7 +200,7 @@ switch ($action) {
         break;
 
     case 'custommodify':
-        if (count($argv) < 6 || count($argv) > 9) {
+        if (count($argv) < 6 || count($argv) > 8) {
             showHelp();
         }
 
@@ -201,35 +211,51 @@ switch ($action) {
 
         // Do not modify if metadata field
         if($toolkit->checkMetaData($field)) {
-            $this->metaDataError();
+            metaDataMessage();
         }
 
         // Set anonymous function
         if ($operation === 'add') {
             $fn = function ($val) use($opVal) {
+                // if value is null don't alter
+                if (!isset($val)) {
+                    return $val;
+                }
                 if (!is_numeric($val) || !is_numeric($opVal)) {
                     throw new Exception("Non-numeric value given for addition operation");
                 }
                 return $val + $opVal;
             };
+
         } elseif ($operation === 'multiply') {
             $fn = function ($val) use($opVal) {
+                // if value is null don't alter
+                if (!isset($val)) {
+                    return $val;
+                }
                 if (!is_numeric($val) || !is_numeric($opVal)) {
                     throw new Exception("Non-numeric value given for multiplication operation");
                 }
                 return $val * $opVal;
             };
+
         } elseif ($operation === 'divide') {
             $fn = function ($val) use($opVal) {
+                // if value is null don't alter
+                if (!isset($val)) {
+                    return $val;
+                }
                 if (!is_numeric($val) || !is_numeric($opVal)) {
                     throw new Exception("Non-numeric value given for division operation");
                 }
                 return $val / $opVal;
             };
+
         } elseif ($operation === 'concat') {
             $fn = function ($val) use($opVal) {
                 return $val . $opVal;
             };
+
         } else {
             showHelp();
         }
@@ -239,30 +265,32 @@ switch ($action) {
         if(isset($argv[6]) && isset($argv[7])) {
             $conditionalField = $argv[6];
             $conditionalVal = $argv[7];
-            $overrule = isset($argv[8]) && $argv[8] === 'overrule' ? true : false;
             $conditions = array($conditionalField => $conditionalVal);
 
             // Execute action and get number of changes
             $fieldsChanged = $toolkit->customModify(
                 $fn,
                 $field,
-                $conditions,
-                $overrule
+                $conditions
             );
+
         } else {
-            $overrule = isset($argv[6]) && $argv[6] === 'overrule' ? true : false;
             // Execute action and get number of changes
             $fieldsChanged = $toolkit->customModify(
                 $fn,
-                $field,
-                $overrule
+                $field
             );
         }
         // Print how many changes made (if any)
         if($fieldsChanged) {
+            print_r("\n#########################################################\n");
             print_r("The command was performed with $fieldsChanged changes made.\n");
+            print_r("#########################################################\n");
+
         } else {
-            print_r("No changes were made in the database. \n");
+            print_r("\n#########################################################\n");
+            print_r("\nNo changes were made in the database. \n");
+            print_r("#########################################################\n");
         }
 
         // check for status field
@@ -272,7 +300,9 @@ switch ($action) {
         break;
 
     default:
-        print_r("Action $action not recognized.\n\n");
+        print_r("\n#########################################################\n");
+        print_r("Action $action not recognized.\n");
+        print_r("#########################################################\n");
         showHelp();
 }
 
@@ -305,10 +335,10 @@ Drop:           php JSON_data.php [tbl] drop [field]
 Modify:         php JSON_data.php [tbl] modify [field] [newVal] [conField] [conVal] 
                 -   Set [field] to [newVal] where [conField] has value [conVal] for instrument [tbl]
                 
-customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal] [overrule]**
+customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal]
                 -   Perform [operation]* with value [opVal] on [field] in instrument [tbl]
                 
-                php JSON_data.php [tbl] customModify [field] [operation] [opVal] [conField] [conVal] [overrule]**
+                php JSON_data.php [tbl] customModify [field] [operation] [opVal] [conField] [conVal]
                 -   Perform [operation]* with value [opVal] on [field] in instrument [tbl] 
                     when [conField] has value [conVal]
                     
@@ -316,17 +346,16 @@ customModify:   php JSON_data.php [tbl] customModify [field] [operation] [opVal]
                     add         Add [opVal] to field
                     multiply    Multiple field by [opVal]
                     divide      Divide field by [opVal]
-                    concat      Concatenate field with [opVal] 
-                
-                ** The keyword 'overrule' can be used as the last argument to bypass validation.
+                    concat      Concatenate field with [opVal]
+
 USAGE;
     die();
 }
 
-function metaDataError() {
+function metaDataMessage() {
     print_r("#########################################################\n");
     print_r("Can not alter metadata values:\n");
-    print_r("Date_taken \nExaminer \nCandidate_Age \nWindow_Difference");
+    print_r("Date_taken \nExaminer \nCandidate_Age \nWindow_Difference\n");
     print_r("#########################################################\n");
     die();
 }
