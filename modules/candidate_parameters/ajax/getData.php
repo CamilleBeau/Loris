@@ -58,6 +58,9 @@ case 'candidateDOB':
 case 'candidateDOD':
     echo json_encode(getDODFields());
     exit;
+case 'diagnosisEvolution':
+    echo json_encode(getDiagnosisEvolutionFields());
+    exit;
 default:
     header("HTTP/1.1 404 Not Found");
     exit;
@@ -560,6 +563,26 @@ function getDODFields(): array
         'dod'    => $candidateData['DoD'],
         'dob'    => $candidateData['DoB'],
     ];
+    return $result;
+}
+
+/**
+ * Handles the fetching of candidate's diagnosis evolution.
+ *
+ * @return array
+ */
+function getDiagnosisEvolutionFields(): array
+{
+    $db = \Database::singleton();
+    $diagnosisTrajectory = $db->pselect(
+        "SELECT * FROM diagnosis_evolution
+        ORDER BY orderNumber",
+        []
+    );
+
+    foreach ($diagnosisTrajectory as $key => $data) {
+
+    }
     return $result;
 }
 
