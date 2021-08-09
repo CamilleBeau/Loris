@@ -67,7 +67,7 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                                 <input list="sourceFields" class="form-control dxTrajectorySourceField" name="sourceField" value="{$diagnosis.sourceField}">
                                 <datalist id="sourceFields">
                                     {foreach from=$sourceFields key=name item=source}
-                                        <option value="{$name}">{$source}</option>
+                                        <option value="{$source}">{$name}</option>
                                     {/foreach}
                                 </datalist>
                             </div>
@@ -140,7 +140,7 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                             <input list="sourceFields" class="form-control dxTrajectorySourceField" name="sourceField" placeholder="Please select a source field here">
                             <datalist id="sourceFields">
                                 {foreach from=$sourceFields key=name item=source}
-                                    <option value="{$name}">{$source}</option>
+                                    <option value="{$source}">{$name}</option>
                                 {/foreach}
                             </datalist>
                         </div>

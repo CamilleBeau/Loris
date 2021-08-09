@@ -58,7 +58,7 @@ if ($dxEvolutionID == 'new') {
     // Validation: Source Field belongs to Instrument
     $instrumentFields = array_column(
         \Utility::getSourcefields($instrumentName),
-        'Name'
+        'SourceField'
     );
     if (!in_array($sourceField, $instrumentFields)) {
         printAndExit(409, ['error' => 'Conflict! Source Field does not exists in instrument.']);
