@@ -563,16 +563,52 @@ function getDODFields(): array
  */
 function getDiagnosisEvolutionFields(): array
 {
+    $candID = new CandID($_GET['candID']);
     $db = \Database::singleton();
+
+    $pscid = $db->pselectOne(
+        "SELECT PSCID FROM candidate
+        WHERE CandID=:candID",
+        ['candID' => $candID]
+    );
+
     $diagnosisTrajectory = $db->pselect(
         "SELECT * FROM diagnosis_evolution
         ORDER BY orderNumber",
         []
     );
 
+    $diagnosisEvolution = [];
     foreach ($diagnosisTrajectory as $key => $data) {
+        $name = $data['Name'];
+        $sourceField = $data['sourceField'];
+        $instrument = $data['instrumentName'];
+        $visit = $data['visitLabel'];
+        $orderNumber = $data['orderNumber'];
 
+        $diagnosisData = $db->pselectOne(
+            "SELECT $sourceField FROM $instrument i
+            JOIN flag f ON (i.CommentID=f.CommentID)
+            JOIN session s ON (f.SessionID=s.ID)
+            WHERE s.CandID=:candID 
+            AND i.CommentID NOT LIKE 'DDE%'
+            AND s.Visit_label=:visit
+            AND f.Test_name=:tn",
+            ['candID' => $candID, 'visit' => $visit, 'tn' => $instrument]
+        );
+
+        $diagnosisEvolution[] = [
+            'name' => $name,
+            'diagnosis' => $diagnosisData
+        ];
     }
+
+    $result = [
+        'pscid' => $pscid,
+        'candID' => $candID,
+        'diagnosisEvolution' => $diagnosisEvolution
+
+    ];
     return $result;
 }
 
