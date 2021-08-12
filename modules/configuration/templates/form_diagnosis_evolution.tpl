@@ -1,3 +1,14 @@
+{function name=printSourceFields}
+    <div class="entry">
+        <input list="sourceFields" class="form-control dxTrajectorySourceField" name="sourceField-{$k}" value="{$value}">
+        <datalist id="sourceFields">
+            {foreach from=$sourceFields key=fieldName item=source}
+                <option value="{$source}">{$fieldName}</option>
+            {/foreach}
+        </datalist>
+    </div>
+{/function}
+
 <script language="javascript" src="{$baseurl}/configuration/js/diagnosis_evolution.js">
 </script>
 <p>Use this page to manage the configuration of the study's diagnosis trajectory.</p>
@@ -14,7 +25,6 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
     {/foreach}
 </ul>
 </div>
-
 
 <div class="col-md-7">
     <div class="tab-content">
@@ -64,12 +74,15 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                                 <label class="col-sm-12 control-label">Source Field</label>
                             </div>
                             <div class="col-sm-12 col-md-9">
-                                <input list="sourceFields" class="form-control dxTrajectorySourceField" name="sourceField" value="{$diagnosis.sourceField}">
-                                <datalist id="sourceFields">
-                                    {foreach from=$sourceFields key=name item=source}
-                                        <option value="{$source}">{$name}</option>
+                                <div class="source-form-group">
+                                    {assign var="dxSourceFields" value=","|explode:{$diagnosis.sourceField}}
+                                    {foreach from=$dxSourceFields key=k item=source}
+                                        {call printSourceFields k=$k value=$source}
                                     {/foreach}
-                                </datalist>
+                                </div>
+                                <button class="btn btn-success add" id="sourceField" type="button">
+                                    <span class="glyphicon glyphicon-plus"></span> Add field
+                                </button>
                             </div>
                         </div>
                         <div class="form-group">
@@ -92,6 +105,7 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                 </form>
             </div>
         {/foreach}
+
         <div id="diagnosisnew" class="tab-pane active">
             <h3>Diagnosis Evolution</h3>
             </br>
@@ -137,12 +151,19 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                             <label class="col-sm-12 control-label" for="sourceFields">Source Field</label>
                         </div>
                         <div class="col-sm-12 col-md-9">
-                            <input list="sourceFields" class="form-control dxTrajectorySourceField" name="sourceField" placeholder="Please select a source field here">
-                            <datalist id="sourceFields">
-                                {foreach from=$sourceFields key=name item=source}
-                                    <option value="{$source}">{$name}</option>
-                                {/foreach}
-                            </datalist>
+                            <div class="source-form-group">
+                                <div class="entry">
+                                    <input list="sourceFields" class="form-control dxTrajectorySourceField" name="sourceField" placeholder="Please select a source field here">
+                                    <datalist id="sourceFields">
+                                        {foreach from=$sourceFields key=name item=source}
+                                            <option value="{$source}">{$name}</option>
+                                        {/foreach}
+                                    </datalist>
+                                </div>
+                            </div>
+                            <button class="btn btn-success add" id="sourceField" type="button">
+                                <span class="glyphicon glyphicon-plus"></span> Add field
+                            </button>
                         </div>
                     </div>
                     <div class="form-group">

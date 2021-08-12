@@ -586,7 +586,7 @@ function getDiagnosisEvolutionFields(): array
         $visit = $data['visitLabel'];
         $orderNumber = $data['orderNumber'];
 
-        $diagnosisData = $db->pselectOne(
+        $diagnosisData = $db->pselectRow(
             "SELECT $sourceField FROM $instrument i
             JOIN flag f ON (i.CommentID=f.CommentID)
             JOIN session s ON (f.SessionID=s.ID)
@@ -597,10 +597,12 @@ function getDiagnosisEvolutionFields(): array
             ['candID' => $candID, 'visit' => $visit, 'tn' => $instrument]
         );
 
-        $diagnosisEvolution[] = [
-            'name' => $name,
-            'diagnosis' => $diagnosisData
-        ];
+        if (!is_null($diagnosisData)) {
+            $diagnosisEvolution[] = [
+                'name' => $name,
+                'diagnosis' => $diagnosisData
+            ];
+        }
     }
 
     $result = [

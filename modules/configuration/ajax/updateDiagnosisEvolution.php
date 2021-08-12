@@ -25,21 +25,36 @@ $client->initialize();
 $DB = \Database::singleton();
 
 $dxEvolutionID = $_POST['DxEvolutionID'] ?? null;
-
 $name = $_POST['Name'] ?? null;
 $visit = $_POST['visitLabel'] ?? null;
 $instrumentName = $_POST['instrumentName'] ?? null;
-$sourceField = $_POST['sourceField'] ?? null;
+$sourceFields = $_POST['sourceFields'] ?? null;
 $orderNumber = $_POST['orderNumber'] ?? null;
 
+/**         VALIDATE THE FORM            */
+// Validation: Form is complete
+if (!($dxEvolutionID && $name && $visit && $instrumentName && $sourceFields && $orderNumber)) {
+    printAndExit(400, ['error' => 'Please fill out all fields!']);
+}
+
+// Validation: Instrument is part of Visit's test battery
+$visitInstruments = \Utility::getVisitInstruments($visit);
+if (!array_key_exists($instrumentName, $visitInstruments)) {
+    printAndExit(409, ['error' => 'Conflict! Instrument does not exist in selected visit.']);
+}
+
+// Validation: Source Field belongs to Instrument
+$instrumentFields = array_column(
+    \Utility::getSourcefields($instrumentName),
+    'SourceField'
+);
+$matches = array_intersect($sourceFields, $instrumentFields);
+if (count($matches) !== count($sourceFields)) {
+    printAndExit(409, ['error' => 'Conflict! Source Field does not exists in instrument.']);
+}
 
 // Create or update a Diagnosis Trajectory
 if ($dxEvolutionID == 'new') {
-    // Validation: Form is complete
-    if (!($dxEvolutionID && $name && $visit && $instrumentName && $sourceField && $orderNumber)) {
-        printAndExit(400, ['error' => 'Please fill out all fields!']);
-    }
-
     // Validation: Name does not already exist
     $dxNames = $DB->pselectCol(
         "SELECT Name FROM diagnosis_evolution",
@@ -49,32 +64,27 @@ if ($dxEvolutionID == 'new') {
         printAndExit(409, ['error' => 'Conflict! Trajectory Name already exists.']);
     }
 
-    // Validation: Instrument is part of Visit's test battery
-    $visitInstruments = \Utility::getVisitInstruments($visit);
-    if (!array_key_exists($instrumentName, $visitInstruments)) {
-        printAndExit(409, ['error' => 'Conflict! Instrument does not exist in selected visit.']);
-    }
-
-    // Validation: Source Field belongs to Instrument
-    $instrumentFields = array_column(
-        \Utility::getSourcefields($instrumentName),
-        'SourceField'
-    );
-    if (!in_array($sourceField, $instrumentFields)) {
-        printAndExit(409, ['error' => 'Conflict! Source Field does not exists in instrument.']);
-    }
-
     $DB->insert(
         'diagnosis_evolution',
         [
             "Name"              => $name,
             "visitLabel"        => $visit,
             "instrumentName"    => $instrumentName,
-            "sourceField"       => $sourceField,
+            "sourceField"       => implode(",", $sourceFields),
             "orderNumber"       => $orderNumber
         ]
     );
 } else {
+    // Validation: Name does not already exist
+    $dxNames = $DB->pselectCol(
+        "SELECT Name FROM diagnosis_evolution
+        WHERE DxEvolutionID NOT IN ($dxEvolutionID)",
+        []
+    );
+    if (in_array($name, $dxNames)) {
+        printAndExit(409, ['error' => 'Conflict! Trajectory Name already exists.']);
+    }
+
     // Update Diagnosis Trajectory
     $DB->update(
         'diagnosis_evolution',
@@ -82,7 +92,7 @@ if ($dxEvolutionID == 'new') {
             "Name"              => $name,
             "visitLabel"        => $visit,
             "instrumentName"    => $instrumentName,
-            "sourceField"       => $sourceField,
+            "sourceField"       => implode(",", $sourceFields),
             "orderNumber"       => $orderNumber
         ],
         ['DxEvolutionID' => $dxEvolutionID]

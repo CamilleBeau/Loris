@@ -941,6 +941,96 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         );
         return $res['Description'] ?? '';
     }
+
+    /**
+     * Returns a formatted string of the candidate's latest diagnosis defined by 
+     * the configured diagnosis trajectory.
+     * 
+     * @return string|null
+     */
+    public function getLatestDiagnosis() {
+        $DB     =& Database::singleton();
+        // get configured diagnosis trajectories in DESC order
+        $diagnosisTrajectory = $DB->pselect(
+            "SELECT * FROM diagnosis_evolution
+            ORDER BY orderNumber DESC",
+            []
+        );
+
+        // if no diagnosis trajectories are defined, return null
+        if (is_null($diagnosisTrajectory)){
+            return null;
+        }
+
+        $loris = new \LORIS\LorisInstance(
+            \NDB_Factory::singleton()->database(),
+            \NDB_Factory::singleton()->config(),
+            [
+             "project/modules",
+             "modules",
+            ]
+        );
+
+        $candidateVisits = $this->getListOfVisitLabels();
+        // print_r($candidateVisits);
+        foreach ($diagnosisTrajectory as $key => $data) {
+            // search if candidate has a matching visit
+            $sessionID = array_search($data['visitLabel'], $candidateVisits);
+            // print_r($sessionID . "\n");
+            if ($sessionID) {
+                $matchingVL = $candidateVisits[$sessionID];
+
+                // Find instance of complete instrument
+                $commentID = $DB->pselectOne(
+                    "SELECT CommentID FROM flag f
+                    WHERE f.SessionID=:sid
+                    AND f.Test_name=:tn
+                    AND Data_entry='Complete'
+                    AND CommentID NOT LIKE 'DDE%'",
+                    [
+                        'sid' => $sessionID,
+                        'tn'  => $data['instrumentName'],
+                    ]
+                );
+                // print_r($commentID);
+
+                // If COMPLETE instrument does not exist, go to next diagnosis track
+                if (!$commentID) {
+                    continue;
+                }
+
+                // get instrument instance data
+                $instrument = \NDB_BVL_Instrument::factory($loris, $data['instrumentName'], $commentID);
+                //print_r($instrument);
+                $instrumentData = $instrument->getInstanceData();
+                print_r($instrumentData);
+
+                $latestDiagnosis = [];
+                $sourceFields = explode(",", $data['sourceField']);
+                foreach ($sourceFields as $k => $fieldName) {
+                    $latestDiagnosis[$fieldName] = $instrumentData[$fieldName];
+                }
+                return json_encode($latestDiagnosis);
+            }
+            
+        }
+/*
+        $latestDxData = $DB->pselectRow(
+            "SELECT $sourceFields FROM $instrument i
+            JOIN flag f ON (i.CommentID=f.CommentID)
+            JOIN session s ON (f.SessionID=s.ID)
+            WHERE s.CandID=:candID 
+            AND i.CommentID NOT LIKE 'DDE%'
+            AND s.Visit_label=:visit
+            AND f.Test_name=:tn",
+            ['candID' => $this->getCandID(), 'visit' => $visit, 'tn' => $instrument]
+        );
+
+        $latestDiagnosis .= "$field : $data \n";
+
+        return $latestDiagnosis;*/
+    }
+
     /**
      * Transforms a config structure (such as in PSCID) into a
      * Perl-compatible regex expression for validation
