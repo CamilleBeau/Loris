@@ -7,3 +7,6 @@ CREATE TABLE `diagnosis_evolution` (
   `orderNumber` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`DxEvolutionID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+ALTER TABLE `candidate`
+  ADD COLUMN LatestDiagnosis text DEFAULT NULL;

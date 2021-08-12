@@ -23,6 +23,10 @@ class DiagnosisEvolution extends Component {
 
     this.fetchData = this.fetchData.bind(this);
     this.setFormData = this.setFormData.bind(this);
+    this.formattedDiagnosisEvolution =
+    this.formattedDiagnosisEvolution.bind(this);
+    this.renderLatestDiagnosis =
+    this.renderLatestDiagnosis.bind(this);
   }
 
   /**
@@ -67,15 +71,19 @@ class DiagnosisEvolution extends Component {
   formattedDiagnosisEvolution() {
     const dxEvolution = this.state.data.diagnosisEvolution;
     let formattedDxEvolution = [];
-    dxEvolution.map((entry, index) => {
-      formattedDxEvolution.push(
-        [
-          entry.name,
-          entry.diagnosis,
-        ]
-      );
+    dxEvolution.map((record) => {
+      const {name, diagnosis} = record;
+      Object.entries(diagnosis).map((entry) => {
+        const [fieldName, dx] = entry;
+        formattedDxEvolution.push(
+          [
+            name,
+            fieldName,
+            dx,
+          ]
+        );
+      });
     });
-    console.log(formattedDxEvolution);
     return formattedDxEvolution;
   }
 
@@ -86,11 +94,14 @@ class DiagnosisEvolution extends Component {
   renderLatestDiagnosis() {
     const dx = this.state.data.diagnosisEvolution;
     const latestDx = dx[dx.length-1];
-    const diagnosis = latestDx.diagnosis;
+    if (typeof latestDx == 'undefined') {
+      return;
+    }
+    const diagnosis = Object.values(latestDx.diagnosis).join(', ');
 
     return (
       <StaticElement
-        label={<h4>Latest Diagnosis</h4>}
+        label='Latest Diagnosis'
         text={diagnosis}
       />
     );
@@ -109,8 +120,6 @@ class DiagnosisEvolution extends Component {
     if (!this.state.isLoaded) {
         return <Loader/>;
     }
-
-    console.log(this.state.data.diagnosisEvolution);
 
     return (
       <div className='row'>
@@ -134,6 +143,7 @@ class DiagnosisEvolution extends Component {
           <StaticDataTable
             Headers={[
               'Trajectory Name',
+              'Source Field',
               'Diagnosis',
             ]}
             Data={this.formattedDiagnosisEvolution()}
