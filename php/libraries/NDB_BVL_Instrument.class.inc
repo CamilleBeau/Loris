@@ -589,6 +589,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             $this->form->process([&$this, '_saveValues'], true);
             $this->score();
             $this->updateRequiredElementsCompletedFlag();
+            $this->propagateData();
         } else {
             $submittedData = $this->form->getSubmitValues();
 
@@ -2231,6 +2232,126 @@ abstract class NDB_BVL_Instrument extends NDB_Page
                 $defaults
             );
         }
+    }
+
+    /**
+     * Calls all functions which propagate data to other sources.
+     * 
+     * @return void
+     */
+    function propagateData() {
+        $this->propagateLatestDiagnosisData();
+    }
+
+    /**
+     * Checks if current instrument contains a diagnosis track 
+     * and determines whether it is the latest diagnosis. If so,
+     * it propagates the data to the LatestDiagnosis field in the 
+     * candidate table.
+     * 
+     * @return void
+     */
+    function propagateLatestDiagnosisData() {
+        $DB     =& Database::singleton();
+        
+        // if the instrument is not part of a configured Dx Tracjectory; return
+        if (!$this->isConfiguredDiagnosisTrack()) {
+            return;
+        }
+        
+        // if the instrument is the latest diagnosis, update candidate table
+        $latestDx = $this->determineLatestDiagnosis();
+        if (is_null($latestDx)) {
+            return;
+        }
+    }
+
+    /**
+     * Determines whether an instrument is part of a configured
+     * diagnosis trajectory.
+     * 
+     * @return bool 
+     */
+    function isConfiguredDiagnosisTrack() {
+        $DB     =& Database::singleton();
+
+        // Check if there is a diagnosis trajectory defined 
+        // for this instrument
+        $match = $DB->pselectCol(
+            "SELECT instrumentName FROM diagnosis_evolution
+            WHERE instrumentName=:tn",
+            ['tn' => $this->testName]
+        );
+
+        if (is_null($match)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 
+     */
+    function determineLatestDiagnosis() {
+        $DB =& Database::singleton();
+
+        // Get diagnosis trajectories with orderNumber greater or equal 
+        // to current instrument's dx track
+        $diagnosisTracks = $DB->pselect(
+            "SELECT * FROM diagnosis_evolution
+            WHERE OrderNumber >= (
+                SELECT MAX(OrderNumber) 
+                FROM diagnosis_evolution 
+                WHERE instrumentName=$this->testName
+                LIMIT 1) 
+            ORDER BY OrderNumber ASC",
+            []
+        );
+
+        // Check if there are more diagnosis tracks configured that come after this instrument's
+        if (count($diagnosisTracks) > 1) {
+            // check if other dx track has data, if so latest diagnosis 
+            // does not come from current instrument and thus we should NOT propagate its data.
+            $otherDxTrack = $diagnosisTracks[1];
+            $otherInstrumentName = $otherDxTrack['instrumentName'];
+            $otherSourceFields = $otherDxTrack['sourceField'];
+            $otherDxData = $DB->pselectRow(
+                "SELECT $otherSourceFields
+                FROM $otherInstrumentName i
+                JOIN flag f ON (i.CommentID=f.CommentID)
+                JOIN session s ON (f.SessionID=s.ID)
+                JOIN candidate c ON (s.CandID=c.CandID)
+                WHERE s.Visit_label=:vl 
+                AND f.Test_name=:tn
+                AND i.CommentID NOT LIKE \"DDE%\"
+                AND c.PSCID=:pscid
+                AND i.Data_entry_completion_status='Complete'",
+                [
+                    'vl' => $otherDxTrack['visitLabel'],
+                    'tn' => $otherInstrumentName,
+                    'pscid' => $this->getPSCID()
+                ]
+            );
+
+            if (!is_null($otherDxData) && !array_filter($otherDxData)) {
+                // If there is a non-empty result, then the current instrument 
+                // is NOT latest dx and data should NOT be propagated.
+                return null;
+            }
+        }
+
+        // Current instrument contains the latest diagnosis
+        // Return the data to be propagated
+        $latestDxTrack = $diagnosisTracks[0];
+        $instrumentData = $this->getInstanceData();
+
+        $latestDiagnosis = [];
+        $sourceFields = explode(",", $latestDxTrack['sourceField']);
+        foreach ($sourceFields as $k => $fieldName) {
+            $latestDiagnosis[$fieldName] = $instrumentData[$fieldName];
+        }
+
+        return $latestDiagnosis;
     }
 
     /**
