@@ -96,7 +96,8 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         $query = "SELECT c.RegistrationCenterID, c.CandID, c.PSCID, c.DoB,
             c.EDC, c.Sex, c.Entity_type,
             p.Name AS PSC, c.Ethnicity,
-            c.Active, u1.Real_name as RegisteredBy, c.UserID, c.RegistrationProjectID
+            c.Active, u1.Real_name as RegisteredBy, c.UserID, c.RegistrationProjectID,
+            c.LatestDiagnosis, c.SourcedFromDxEvolutionID
             FROM candidate as c
             LEFT JOIN psc as p ON (p.CenterID=c.RegistrationCenterID)
             LEFT JOIN users as u1 ON (u1.UserID = c.RegisteredBy)
@@ -981,88 +982,25 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
     }
 
     /**
-     * Returns a formatted string of the candidate's latest diagnosis defined by 
+     * Returns the candidate's latest diagnosis defined by 
      * the configured diagnosis trajectory.
      * 
-     * @return string|null
+     * @return string|null JSON of LatestDiagnosis
      */
-    public function getLatestDiagnosis() {
-        $DB     =& Database::singleton();
-        // get configured diagnosis trajectories in DESC order
-        $diagnosisTrajectory = $DB->pselect(
-            "SELECT * FROM diagnosis_evolution
-            ORDER BY orderNumber DESC",
-            []
-        );
+    function getLatestDiagnosis() : ?string
+    {
+        return $this->candidateInfo['LatestDiagnosis'];
+    }
 
-        // if no diagnosis trajectories are defined, return null
-        if (is_null($diagnosisTrajectory)){
-            return null;
-        }
-
-        $loris = new \LORIS\LorisInstance(
-            \NDB_Factory::singleton()->database(),
-            \NDB_Factory::singleton()->config(),
-            [
-             "project/modules",
-             "modules",
-            ]
-        );
-
-        $candidateVisits = $this->getListOfVisitLabels();
-        foreach ($diagnosisTrajectory as $key => $data) {
-            // search if candidate has a matching visit
-            $sessionID = array_search($data['visitLabel'], $candidateVisits);
-            if ($sessionID) {
-                $matchingVL = $candidateVisits[$sessionID];
-
-                // Find instance of complete instrument
-                $commentID = $DB->pselectOne(
-                    "SELECT CommentID FROM flag f
-                    WHERE f.SessionID=:sid
-                    AND f.Test_name=:tn
-                    AND Data_entry='Complete'
-                    AND CommentID NOT LIKE 'DDE%'",
-                    [
-                        'sid' => $sessionID,
-                        'tn'  => $data['instrumentName'],
-                    ]
-                );
-
-                // If COMPLETE instrument does not exist, go to next diagnosis track
-                if (!$commentID) {
-                    continue;
-                }
-
-                // get instrument instance data
-                $instrument = \NDB_BVL_Instrument::factory($loris, $data['instrumentName'], $commentID);
-                $instrumentData = $instrument->getInstanceData();
-
-
-                $latestDiagnosis = [];
-                $sourceFields = explode(",", $data['sourceField']);
-                foreach ($sourceFields as $k => $fieldName) {
-                    $latestDiagnosis[$fieldName] = $instrumentData[$fieldName];
-                }
-                return json_encode($latestDiagnosis);
-            }
-            
-        }
-/*
-        $latestDxData = $DB->pselectRow(
-            "SELECT $sourceFields FROM $instrument i
-            JOIN flag f ON (i.CommentID=f.CommentID)
-            JOIN session s ON (f.SessionID=s.ID)
-            WHERE s.CandID=:candID 
-            AND i.CommentID NOT LIKE 'DDE%'
-            AND s.Visit_label=:visit
-            AND f.Test_name=:tn",
-            ['candID' => $this->getCandID(), 'visit' => $visit, 'tn' => $instrument]
-        );
-
-        $latestDiagnosis .= "$field : $data \n";
-
-        return $latestDiagnosis;*/
+    /**
+     * Returns the DxEvolutionID for which the latest diagnosis 
+     * is based on.
+     * 
+     * @return int|null the DxEvolutionID that LatestDiagnosis is based on
+     */
+    function getLatestDiagnosisSource() : ?int 
+    {
+        return intval($this->candidateInfo['SourcedFromDxEvolutionID']);
     }
 
     /**

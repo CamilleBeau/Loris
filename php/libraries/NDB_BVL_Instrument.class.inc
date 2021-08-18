@@ -2259,11 +2259,21 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             return;
         }
         
-        // if the instrument is the latest diagnosis, update candidate table
+        // Determine if candidate's latest diagnosis should be updated with 
+        // this instrument's data. If so, update candidate table.
         $latestDx = $this->determineLatestDiagnosis();
         if (is_null($latestDx)) {
             return;
         }
+
+        // LatestDiagnosis is formatted as JSON and ensures that this is safe. 
+        // If we use the safe wrapper, HTML encoding the quotation marks 
+        // will make it invalid JSON.
+        $DB->unsafeUpdate(
+            'candidate',
+            $latestDx,
+            ['PSCID' => $this->getPSCID()]
+        );
     }
 
     /**
@@ -2290,66 +2300,68 @@ abstract class NDB_BVL_Instrument extends NDB_Page
     }
 
     /**
+     * Determines whether the candidate's latest diagnosis should be updated.
+     * If so, it returns an array containing the source and new diagnosis.
      * 
+     * @return array|null
      */
-    function determineLatestDiagnosis() {
+    function determineLatestDiagnosis() : ?array
+    {
         $DB =& Database::singleton();
 
-        // Get diagnosis trajectories with orderNumber greater or equal 
-        // to current instrument's dx track
-        $diagnosisTracks = $DB->pselect(
-            "SELECT * FROM diagnosis_evolution
-            WHERE OrderNumber >= (
-                SELECT MAX(OrderNumber) 
-                FROM diagnosis_evolution 
-                WHERE instrumentName=$this->testName
-                LIMIT 1) 
-            ORDER BY OrderNumber ASC",
-            []
+        $candidate = \Candidate::singleton(new CandID($this->getCandID()));
+
+        // Get the DxEvolutionID of the candidate's CURRENT diagnosis trajectory
+        $currentDxEvolutionID = $candidate->getLatestDiagnosisSource();
+
+        $orderNumberClause = "";
+        if (!is_null($currentDxEvolutionID)) {
+            $orderNumberClause = "AND orderNumber >= (
+                SELECT OrderNumber 
+                FROM diagnosis_evolution
+                WHERE DxEvolutionID=$currentDxEvolutionID
+            )"; 
+        }
+
+        // select the new diagnosis trajectory if the current instrument 
+        // has orderNumber equal to (update) or greater than (new) the candidate's
+        // current DxEvolution
+        $query = "SELECT 
+                DxEvolutionID, 
+                sourceField, 
+                MAX(OrderNumber) as OrderNumber
+            FROM diagnosis_evolution
+            WHERE instrumentName=:tn " 
+            . $orderNumberClause
+            . "GROUP BY DxEvolutionID, sourceField";
+
+        $newDiagnosisTrajectory = $DB->pselectRow(
+            $query,
+            ['tn' => $this->testName]
         );
+    
+        if (is_null($newDiagnosisTrajectory)) {
+            return null;
+        }
 
-        // Check if there are more diagnosis tracks configured that come after this instrument's
-        if (count($diagnosisTracks) > 1) {
-            // check if other dx track has data, if so latest diagnosis 
-            // does not come from current instrument and thus we should NOT propagate its data.
-            $otherDxTrack = $diagnosisTracks[1];
-            $otherInstrumentName = $otherDxTrack['instrumentName'];
-            $otherSourceFields = $otherDxTrack['sourceField'];
-            $otherDxData = $DB->pselectRow(
-                "SELECT $otherSourceFields
-                FROM $otherInstrumentName i
-                JOIN flag f ON (i.CommentID=f.CommentID)
-                JOIN session s ON (f.SessionID=s.ID)
-                JOIN candidate c ON (s.CandID=c.CandID)
-                WHERE s.Visit_label=:vl 
-                AND f.Test_name=:tn
-                AND i.CommentID NOT LIKE \"DDE%\"
-                AND c.PSCID=:pscid
-                AND i.Data_entry_completion_status='Complete'",
-                [
-                    'vl' => $otherDxTrack['visitLabel'],
-                    'tn' => $otherInstrumentName,
-                    'pscid' => $this->getPSCID()
-                ]
-            );
+        $this->instanceData = null;
+        $instrumentData = $this->getInstanceData();
+        $sourceFields = explode(",", $newDiagnosisTrajectory['sourceField']);
 
-            if (!is_null($otherDxData) && !array_filter($otherDxData)) {
-                // If there is a non-empty result, then the current instrument 
-                // is NOT latest dx and data should NOT be propagated.
+        $diagnosis = [];
+        foreach ($sourceFields as $k => $fieldName) {
+            // None of the diagnosis components should be empty
+            // If so, the latest diagnosis should not be updated.
+            if (is_null($instrumentData[$fieldName])) {
                 return null;
             }
+            $diagnosis[$fieldName] = $instrumentData[$fieldName];
         }
 
-        // Current instrument contains the latest diagnosis
-        // Return the data to be propagated
-        $latestDxTrack = $diagnosisTracks[0];
-        $instrumentData = $this->getInstanceData();
-
-        $latestDiagnosis = [];
-        $sourceFields = explode(",", $latestDxTrack['sourceField']);
-        foreach ($sourceFields as $k => $fieldName) {
-            $latestDiagnosis[$fieldName] = $instrumentData[$fieldName];
-        }
+        $latestDiagnosis = [
+            'SourcedFromDxEvolutionID' => $newDiagnosisTrajectory['DxEvolutionID'],
+            'LatestDiagnosis'          => json_encode($diagnosis)
+        ];
 
         return $latestDiagnosis;
     }
@@ -2444,6 +2456,25 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             ['CID' => $CommentID]
         );
         return $pscid;
+    }
+
+    /**
+     * Get the candidate's CandID
+     */
+    function getCandID() : ?string 
+    {
+        $db        = \Database::singleton();
+        $CommentID = $this->getCommentID();
+
+        $candID = $db->pselectOne(
+            "SELECT c.CandID FROM flag f
+            JOIN session s ON (f.SessionID=s.ID)
+            JOIN candidate c USING (CandID)
+            WHERE f.CommentID=:CID",
+            ['CID' => $CommentID]
+        );
+        return $candID;
+
     }
 
     /**
