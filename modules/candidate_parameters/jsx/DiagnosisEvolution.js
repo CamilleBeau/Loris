@@ -92,12 +92,8 @@ class DiagnosisEvolution extends Component {
    * @return {JSX} - React markup for the component
    */
   renderLatestDiagnosis() {
-    const dx = this.state.data.diagnosisEvolution;
-    const latestDx = dx[dx.length-1];
-    if (typeof latestDx == 'undefined') {
-      return;
-    }
-    const diagnosis = Object.values(latestDx.diagnosis).join(', ');
+    const latestDiagnosis = this.state.data.latestDiagnosis;
+    const diagnosis = Object.values(JSON.parse(latestDiagnosis)).join(', ');
 
     return (
       <StaticElement

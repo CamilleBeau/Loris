@@ -605,10 +605,13 @@ function getDiagnosisEvolutionFields(): array
         }
     }
 
+    $latestDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis();
+
     $result = [
         'pscid' => $pscid,
         'candID' => $candID,
-        'diagnosisEvolution' => $diagnosisEvolution
+        'diagnosisEvolution' => $diagnosisEvolution,
+        'latestDiagnosis' => $latestDiagnosis
 
     ];
     return $result;

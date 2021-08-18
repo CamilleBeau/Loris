@@ -22,16 +22,83 @@ $candIDs = $DB->pselectCol(
     []
 );
 
+// get configured diagnosis trajectories in DESC order
+$diagnosisTrajectory = $DB->pselect(
+    "SELECT * FROM diagnosis_evolution
+    ORDER BY orderNumber DESC",
+    []
+);
+
+// if no diagnosis trajectories are defined, return null
+if (is_null($diagnosisTrajectory)){
+    echo "There are no configured Diagnosis Trajectories. Nothing to update.\n";
+    exit;
+}
+
+$loris = new \LORIS\LorisInstance(
+    \NDB_Factory::singleton()->database(),
+    \NDB_Factory::singleton()->config(),
+    [
+     "project/modules",
+     "modules",
+    ]
+);
+
 foreach ($candIDs as $k => $candID) {
     $candidate = \Candidate::singleton(new CandID($candID));
-    $latestDx = $candidate->getLatestDiagnosis();
+    $candidateVisits = $candidate->getListOfVisitLabels();
+    foreach ($diagnosisTrajectory as $key => $data) {
+        // search if candidate has a matching visit
+        $sessionID = array_search($data['visitLabel'], $candidateVisits);
+        if ($sessionID) {
+            $matchingVL = $candidateVisits[$sessionID];
 
-    // $latestDx is formatted as JSON and ensures that this is safe. 
-    // If we use the safe wrapper, HTML encoding the quotation marks 
-    // will make it invalid JSON.
-    $DB->unsafeUpdate(
-        'candidate',
-        ['LatestDiagnosis' => $latestDx],
-        ['CandID' => $candID]
-    );
+            // Find instance of complete instrument
+            $commentID = $DB->pselectOne(
+                "SELECT CommentID FROM flag f
+                WHERE f.SessionID=:sid
+                AND f.Test_name=:tn
+                AND Data_entry='Complete'
+                AND CommentID NOT LIKE 'DDE%'",
+                [
+                    'sid' => $sessionID,
+                    'tn'  => $data['instrumentName'],
+                ]
+            );
+
+            // If COMPLETE instrument does not exist, go to next diagnosis track
+            if (!$commentID) {
+                continue;
+            }
+
+            // get instrument instance data
+            $instrument = \NDB_BVL_Instrument::factory($loris, $data['instrumentName'], $commentID);
+            $instrumentData = $instrument->getInstanceData();
+
+
+            $latestDiagnosis = [];
+            $sourceFields = explode(",", $data['sourceField']);
+            foreach ($sourceFields as $k => $fieldName) {
+                // None of the diagnosis components should be empty
+                if (!isset($instrumentData[$fieldName])) {
+                    continue 2;
+                }
+                $latestDiagnosis[$fieldName] = $instrumentData[$fieldName];
+            }
+
+            $set = [
+                'SourcedFromDxEvolutionID' => $data['DxEvolutionID'],
+                'LatestDiagnosis'          => json_encode($latestDiagnosis)
+            ];
+
+            print_r("\nUpdating Latest Diagnosis for CandID: $candID\n");
+            print_r("\t" . json_encode($latestDiagnosis) . "\n");
+            
+            $DB->unsafeUpdate(
+                'candidate',
+                $set,
+                ['CandID' => $candID]
+            );
+        }
+    }
 }
