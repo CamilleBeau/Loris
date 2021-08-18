@@ -972,11 +972,9 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         );
 
         $candidateVisits = $this->getListOfVisitLabels();
-        // print_r($candidateVisits);
         foreach ($diagnosisTrajectory as $key => $data) {
             // search if candidate has a matching visit
             $sessionID = array_search($data['visitLabel'], $candidateVisits);
-            // print_r($sessionID . "\n");
             if ($sessionID) {
                 $matchingVL = $candidateVisits[$sessionID];
 
@@ -992,7 +990,6 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
                         'tn'  => $data['instrumentName'],
                     ]
                 );
-                // print_r($commentID);
 
                 // If COMPLETE instrument does not exist, go to next diagnosis track
                 if (!$commentID) {
@@ -1001,9 +998,8 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
 
                 // get instrument instance data
                 $instrument = \NDB_BVL_Instrument::factory($loris, $data['instrumentName'], $commentID);
-                //print_r($instrument);
                 $instrumentData = $instrument->getInstanceData();
-                print_r($instrumentData);
+
 
                 $latestDiagnosis = [];
                 $sourceFields = explode(",", $data['sourceField']);
