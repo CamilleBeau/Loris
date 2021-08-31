@@ -93,7 +93,8 @@ class DiagnosisEvolution extends Component {
    */
   renderLatestDiagnosis() {
     const latestDiagnosis = this.state.data.latestDiagnosis;
-    const diagnosis = Object.values(JSON.parse(latestDiagnosis)).join(', ');
+    const diagnosis = latestDiagnosis ?
+      Object.values(JSON.parse(latestDiagnosis)).join(', ') : '';
 
     return (
       <StaticElement

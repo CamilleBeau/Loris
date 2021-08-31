@@ -9,7 +9,7 @@ CREATE TABLE `diagnosis_evolution` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 ALTER TABLE `candidate`
-  ADD COLUMN LatestDiagnosis text DEFAULT NULL,
-  ADD COLUMN SourcedFromDxEvolutionID int(10) unsigned DEFAULT NULL,
-  ADD FOREIGN KEY (SourcedFromDxEvolutionID) REFERENCES diagnosis_evolution (DxEvolutionID)
+  ADD COLUMN `LatestDiagnosis` text DEFAULT NULL,
+  ADD COLUMN `SourcedFromDxEvolutionID` int(10) unsigned DEFAULT NULL,
+  ADD CONSTRAINT `FK_DxEvolutionID` FOREIGN KEY (`SourcedFromDxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
 ;
