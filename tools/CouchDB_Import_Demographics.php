@@ -108,6 +108,14 @@ class CouchDBDemographicsImporter
             'Description' => 'Behavioural feedback at the session level',
             'Type'        => "varchar(255)",
         ],
+        'LatestDiagnosis' => [
+            'Description' => 'Candidate\'s Latest Diagnosis',
+            'Type'        => "text",
+        ],
+        'SourcedFromDxEvolutionID' => [
+            'Description' => 'Source of Latest Diagnosis configuration (DXEvolutionID)',
+            'Type'        => "int(10)",
+        ],
     ];
 
     var $Config = [
@@ -239,14 +247,16 @@ class CouchDBDemographicsImporter
                         c.Sex,
                         s.Current_stage,
                         Failure,
-                        c.RegistrationProjectID,
-                        CEF,
-                        CEF_reason,
-                        CEF_comment,
-                        pc_comment.Value,
-                        pso.Description,
-                        ps.participant_suboptions,
-                        ps.reason_specify";
+                        c.RegistrationProjectID, 
+                        CEF, 
+                        CEF_reason, 
+                        CEF_comment, 
+                        pc_comment.Value, 
+                        pso.Description, 
+                        ps.participant_suboptions, 
+                        ps.reason_specify,
+                        c.LatestDiagnosis,
+                        c.SourcedFromDxEvolutionID";
 
         // If proband fields are being used, add proband information into the
         // query
