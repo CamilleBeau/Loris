@@ -1,8 +1,7 @@
 <?php
 /**
- * This script updates each candidate's latest diagnosis based on the 
+ * This script updates each candidate's latest diagnosis based on the
  * confidured diagnosis evolution trajectory.
- *
  *
  * PHP Version 7
  *
@@ -30,7 +29,7 @@ $diagnosisTrajectory = $DB->pselect(
 );
 
 // if no diagnosis trajectories are defined, return null
-if (is_null($diagnosisTrajectory)){
+if (is_null($diagnosisTrajectory)) {
     echo "There are no configured Diagnosis Trajectories. Nothing to update.\n";
     exit;
 }
@@ -39,13 +38,13 @@ $loris = new \LORIS\LorisInstance(
     \NDB_Factory::singleton()->database(),
     \NDB_Factory::singleton()->config(),
     [
-     "project/modules",
-     "modules",
+        "project/modules",
+        "modules",
     ]
 );
 
 foreach ($candIDs as $k => $candID) {
-    $candidate = \Candidate::singleton(new CandID($candID));
+    $candidate       = \Candidate::singleton(new CandID($candID));
     $candidateVisits = $candidate->getListOfVisitLabels();
     foreach ($diagnosisTrajectory as $key => $data) {
         // search if candidate has a matching visit
@@ -72,12 +71,16 @@ foreach ($candIDs as $k => $candID) {
             }
 
             // get instrument instance data
-            $instrument = \NDB_BVL_Instrument::factory($loris, $data['instrumentName'], $commentID);
+            $instrument     = \NDB_BVL_Instrument::factory(
+                $loris,
+                $data['instrumentName'],
+                $commentID
+            );
             $instrumentData = $instrument->getInstanceData();
 
 
             $latestDiagnosis = [];
-            $sourceFields = explode(",", $data['sourceField']);
+            $sourceFields    = explode(",", $data['sourceField']);
             foreach ($sourceFields as $k => $fieldName) {
                 // None of the diagnosis components should be empty
                 if (!isset($instrumentData[$fieldName])) {
@@ -93,7 +96,7 @@ foreach ($candIDs as $k => $candID) {
 
             print_r("\nUpdating Latest Diagnosis for CandID: $candID\n");
             print_r("\t" . json_encode($latestDiagnosis) . "\n");
-            
+
             $DB->unsafeUpdate(
                 'candidate',
                 $set,

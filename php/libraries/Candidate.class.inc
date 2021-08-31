@@ -84,7 +84,8 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         $query = "SELECT c.RegistrationCenterID, c.CandID, c.PSCID, c.DoB,
             c.EDC, c.Sex, c.Entity_type,
             p.Name AS PSC, c.Ethnicity,
-            c.Active, u1.Real_name as RegisteredBy, c.UserID, c.RegistrationProjectID,
+            c.Active, u1.Real_name as RegisteredBy, 
+            c.UserID, c.RegistrationProjectID,
             c.LatestDiagnosis, c.SourcedFromDxEvolutionID
             FROM candidate as c
             LEFT JOIN psc as p ON (p.CenterID=c.RegistrationCenterID)
@@ -944,9 +945,9 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
     }
 
     /**
-     * Returns the candidate's latest diagnosis defined by 
+     * Returns the candidate's latest diagnosis defined by
      * the configured diagnosis trajectory.
-     * 
+     *
      * @return string|null JSON of LatestDiagnosis
      */
     function getLatestDiagnosis() : ?string
@@ -955,12 +956,12 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
     }
 
     /**
-     * Returns the DxEvolutionID for which the latest diagnosis 
+     * Returns the DxEvolutionID for which the latest diagnosis
      * is based on.
-     * 
+     *
      * @return int|null the DxEvolutionID that LatestDiagnosis is based on
      */
-    function getLatestDiagnosisSource() : ?int 
+    function getLatestDiagnosisSource() : ?int
     {
         return $this->candidateInfo['SourcedFromDxEvolutionID'];
     }

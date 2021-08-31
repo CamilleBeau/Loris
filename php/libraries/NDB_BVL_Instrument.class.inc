@@ -2236,38 +2236,40 @@ abstract class NDB_BVL_Instrument extends NDB_Page
 
     /**
      * Calls all functions which propagate data to other sources.
-     * 
+     *
      * @return void
      */
-    function propagateData() {
+    function propagateData()
+    {
         $this->propagateLatestDiagnosisData();
     }
 
     /**
-     * Checks if current instrument contains a diagnosis track 
+     * Checks if current instrument contains a diagnosis track
      * and determines whether it is the latest diagnosis. If so,
-     * it propagates the data to the LatestDiagnosis field in the 
+     * it propagates the data to the LatestDiagnosis field in the
      * candidate table.
-     * 
+     *
      * @return void
      */
-    function propagateLatestDiagnosisData() {
-        $DB     =& Database::singleton();
-        
+    function propagateLatestDiagnosisData()
+    {
+        $DB =& Database::singleton();
+
         // if the instrument is not part of a configured Dx Tracjectory; return
         if (!$this->isConfiguredDiagnosisTrack()) {
             return;
         }
-        
-        // Determine if candidate's latest diagnosis should be updated with 
+
+        // Determine if candidate's latest diagnosis should be updated with
         // this instrument's data. If so, update candidate table.
         $latestDx = $this->determineLatestDiagnosis();
         if (is_null($latestDx)) {
             return;
         }
 
-        // LatestDiagnosis is formatted as JSON and ensures that this is safe. 
-        // If we use the safe wrapper, HTML encoding the quotation marks 
+        // LatestDiagnosis is formatted as JSON and ensures that this is safe.
+        // If we use the safe wrapper, HTML encoding the quotation marks
         // will make it invalid JSON.
         $DB->unsafeUpdate(
             'candidate',
@@ -2279,13 +2281,14 @@ abstract class NDB_BVL_Instrument extends NDB_Page
     /**
      * Determines whether an instrument is part of a configured
      * diagnosis trajectory.
-     * 
-     * @return bool 
+     *
+     * @return bool
      */
-    function isConfiguredDiagnosisTrack() {
-        $DB     =& Database::singleton();
+    function isConfiguredDiagnosisTrack()
+    {
+        $DB =& Database::singleton();
 
-        // Check if there is a diagnosis trajectory defined 
+        // Check if there is a diagnosis trajectory defined
         // for this instrument
         $match = $DB->pselectCol(
             "SELECT instrumentName FROM diagnosis_evolution
@@ -2302,7 +2305,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
     /**
      * Determines whether the candidate's latest diagnosis should be updated.
      * If so, it returns an array containing the source and new diagnosis.
-     * 
+     *
      * @return array|null
      */
     function determineLatestDiagnosis() : ?array
@@ -2320,10 +2323,10 @@ abstract class NDB_BVL_Instrument extends NDB_Page
                 SELECT OrderNumber 
                 FROM diagnosis_evolution
                 WHERE DxEvolutionID=$currentDxEvolutionID
-            )"; 
+            )";
         }
 
-        // select the new diagnosis trajectory if the current instrument 
+        // select the new diagnosis trajectory if the current instrument
         // has orderNumber equal to (update) or greater than (new) the candidate's
         // current DxEvolution
         $query = "SELECT 
@@ -2331,7 +2334,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
                 sourceField, 
                 MAX(OrderNumber) as OrderNumber
             FROM diagnosis_evolution
-            WHERE instrumentName=:tn " 
+            WHERE instrumentName=:tn "
             . $orderNumberClause
             . "GROUP BY DxEvolutionID, sourceField";
 
@@ -2339,14 +2342,14 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             $query,
             ['tn' => $this->testName]
         );
-    
+
         if (is_null($newDiagnosisTrajectory)) {
             return null;
         }
 
         $this->instanceData = null;
-        $instrumentData = $this->getInstanceData();
-        $sourceFields = explode(",", $newDiagnosisTrajectory['sourceField']);
+        $instrumentData     = $this->getInstanceData();
+        $sourceFields       = explode(",", $newDiagnosisTrajectory['sourceField']);
 
         $diagnosis = [];
         foreach ($sourceFields as $k => $fieldName) {
@@ -2460,8 +2463,10 @@ abstract class NDB_BVL_Instrument extends NDB_Page
 
     /**
      * Get the candidate's CandID
+     *
+     * @return string|null The candidate's CandID
      */
-    function getCandID() : ?string 
+    function getCandID() : ?string
     {
         $db        = \Database::singleton();
         $CommentID = $this->getCommentID();
