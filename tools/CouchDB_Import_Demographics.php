@@ -33,87 +33,87 @@ class CouchDBDemographicsImporter
     // this is just in an instance variable to make
     // the code a little more readable.
     var $Dictionary = [
-        'DoB'              => [
+        'DoB'                      => [
             'Description' => 'Date of Birth',
             'Type'        => 'date'
         ],
-        'DoD'              => [
+        'DoD'                      => [
             'Description' => 'Date of Death',
             'Type'        => 'date'
         ],
-        'CandID'           => [
+        'CandID'                   => [
             'Description' => 'DCC Candidate Identifier',
             'Type'        => 'varchar(255)',
         ],
-        'PSCID'            => [
+        'PSCID'                    => [
             'Description' => 'Project Candidate Identifier',
             'Type'        => 'varchar(255)',
         ],
-        'Visit_label'      => [
+        'Visit_label'              => [
             'Description' => 'Visit of Candidate',
             'Type'        => 'varchar(255)',
         ],
-        'Cohort'           => [
+        'Cohort'                   => [
             'Description' => 'Cohort of this session',
             'Type'        => 'varchar(255)',
         ],
-        'Sex'              => [
+        'Sex'                      => [
             'Description' => 'Candidate\'s biological sex',
             'Type'        => "enum('Male', 'Female', 'Other')"
         ],
-        'Site'             => [
+        'Site'                     => [
             'Description' => 'Site that this visit took place at',
             'Type'        => "varchar(3)",
         ],
-        'Current_stage'    => [
+        'Current_stage'            => [
             'Description' => 'Current stage of visit',
             'Type'        => "enum('Not Started','Screening','Visit'," .
                                 "'Approval','Subject','Recycling Bin')",
         ],
-        'Failure'          => [
+        'Failure'                  => [
             'Description' => 'Whether Recycling Bin Candidate was failure or '
                                 .'withdrawal',
             'Type'        => "enum('Failure','Withdrawal','Neither')",
         ],
-        'CEF'              => [
+        'CEF'                      => [
             'Description' => 'Caveat Emptor flag',
             'Type'        => "enum('true','false')",
         ],
-        'CEF_reason'       => [
+        'CEF_reason'               => [
             'Description' => 'Reason for Caveat Emptor flag',
             'Type'        => "varchar(255)",
         ],
-        'CEF_comment'      => [
+        'CEF_comment'              => [
             'Description' => 'Comment on Caveat Emptor flag',
             'Type'        => "varchar(255)",
         ],
-        'Comment'          => [
+        'Comment'                  => [
             'Description' => 'Candidate comment',
             'Type'        => "varchar(255)",
         ],
-        'Status'           => [
+        'Status'                   => [
             'Description' => 'Participant status',
             'Type'        => "varchar(255)",
         ],
-        'Status_reason'    => [
+        'Status_reason'            => [
             'Description' => 'Reason for status - only filled out if status '
                                 . 'is inactive or incomplete',
             'Type'        => "int(10)",
         ],
-        'Status_comments'  => [
+        'Status_comments'          => [
             'Description' => 'Participant status comments',
             'Type'        => "text",
         ],
-        'session_feedback' => [
+        'session_feedback'         => [
             'Description' => 'Behavioural feedback at the session level',
             'Type'        => "varchar(255)",
         ],
-        'LatestDiagnosis' => [
+        'LatestDiagnosis'          => [
             'Description' => 'Candidate\'s Latest Diagnosis',
             'Type'        => "text",
         ],
         'SourcedFromDxEvolutionID' => [
-            'Description' => 'Source of Latest Diagnosis configuration (DXEvolutionID)',
+            'Description' => 'Source of Latest Diagnosis (DXEvolutionID)',
             'Type'        => "int(10)",
         ],
     ];

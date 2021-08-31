@@ -574,7 +574,7 @@ function getDODFields(): array
 function getDiagnosisEvolutionFields(): array
 {
     $candID = new CandID($_GET['candID']);
-    $db = \Database::singleton();
+    $db     = \Database::singleton();
 
     $pscid = $db->pselectOne(
         "SELECT PSCID FROM candidate
@@ -590,10 +590,10 @@ function getDiagnosisEvolutionFields(): array
 
     $diagnosisEvolution = [];
     foreach ($diagnosisTrajectory as $key => $data) {
-        $name = $data['Name'];
+        $name        = $data['Name'];
         $sourceField = $data['sourceField'];
-        $instrument = $data['instrumentName'];
-        $visit = $data['visitLabel'];
+        $instrument  = $data['instrumentName'];
+        $visit       = $data['visitLabel'];
         $orderNumber = $data['orderNumber'];
 
         $diagnosisData = $db->pselectRow(
@@ -609,7 +609,7 @@ function getDiagnosisEvolutionFields(): array
 
         if (!is_null($diagnosisData)) {
             $diagnosisEvolution[] = [
-                'name' => $name,
+                'name'      => $name,
                 'diagnosis' => $diagnosisData
             ];
         }
@@ -618,10 +618,10 @@ function getDiagnosisEvolutionFields(): array
     $latestDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis();
 
     $result = [
-        'pscid' => $pscid,
-        'candID' => $candID,
+        'pscid'              => $pscid,
+        'candID'             => $candID,
         'diagnosisEvolution' => $diagnosisEvolution,
-        'latestDiagnosis' => $latestDiagnosis
+        'latestDiagnosis'    => $latestDiagnosis
 
     ];
     return $result;

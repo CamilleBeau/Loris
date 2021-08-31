@@ -24,23 +24,32 @@ $client->initialize();
 
 $DB = \Database::singleton();
 
-$dxEvolutionID = $_POST['DxEvolutionID'] ?? null;
-$name = $_POST['Name'] ?? null;
-$visit = $_POST['visitLabel'] ?? null;
+$dxEvolutionID  = $_POST['DxEvolutionID'] ?? null;
+$name           = $_POST['Name'] ?? null;
+$visit          = $_POST['visitLabel'] ?? null;
 $instrumentName = $_POST['instrumentName'] ?? null;
-$sourceFields = $_POST['sourceFields'] ?? null;
-$orderNumber = $_POST['orderNumber'] ?? null;
+$sourceFields   = $_POST['sourceFields'] ?? null;
+$orderNumber    = $_POST['orderNumber'] ?? null;
 
-/**         VALIDATE THE FORM            */
+/**
+         * VALIDATE THE FORM
+*/
 // Validation: Form is complete
-if (!($dxEvolutionID && $name && $visit && $instrumentName && $sourceFields && $orderNumber)) {
+if (!($dxEvolutionID && $name && $visit
+    && $instrumentName && $sourceFields && $orderNumber)
+) {
     printAndExit(400, ['error' => 'Please fill out all fields!']);
 }
 
 // Validation: Instrument is part of Visit's test battery
 $visitInstruments = \Utility::getVisitInstruments($visit);
 if (!array_key_exists($instrumentName, $visitInstruments)) {
-    printAndExit(409, ['error' => 'Conflict! Instrument does not exist in selected visit.']);
+    printAndExit(
+        409,
+        ['error' => 'Conflict! Instrument does not 
+        exist in selected visit.'
+        ]
+    );
 }
 
 // Validation: Source Field belongs to Instrument
@@ -48,9 +57,14 @@ $instrumentFields = array_column(
     \Utility::getSourcefields($instrumentName),
     'SourceField'
 );
-$matches = array_intersect($sourceFields, $instrumentFields);
+$matches          = array_intersect($sourceFields, $instrumentFields);
 if (count($matches) !== count($sourceFields)) {
-    printAndExit(409, ['error' => 'Conflict! Source Field does not exists in instrument.']);
+    printAndExit(
+        409,
+        ['error' => 'Conflict! Source Field does not 
+        exist in instrument.'
+        ]
+    );
 }
 
 // Create or update a Diagnosis Trajectory
@@ -67,11 +81,11 @@ if ($dxEvolutionID == 'new') {
     $DB->insert(
         'diagnosis_evolution',
         [
-            "Name"              => $name,
-            "visitLabel"        => $visit,
-            "instrumentName"    => $instrumentName,
-            "sourceField"       => implode(",", $sourceFields),
-            "orderNumber"       => $orderNumber
+            "Name"           => $name,
+            "visitLabel"     => $visit,
+            "instrumentName" => $instrumentName,
+            "sourceField"    => implode(",", $sourceFields),
+            "orderNumber"    => $orderNumber
         ]
     );
 } else {
@@ -89,11 +103,11 @@ if ($dxEvolutionID == 'new') {
     $DB->update(
         'diagnosis_evolution',
         [
-            "Name"              => $name,
-            "visitLabel"        => $visit,
-            "instrumentName"    => $instrumentName,
-            "sourceField"       => implode(",", $sourceFields),
-            "orderNumber"       => $orderNumber
+            "Name"           => $name,
+            "visitLabel"     => $visit,
+            "instrumentName" => $instrumentName,
+            "sourceField"    => implode(",", $sourceFields),
+            "orderNumber"    => $orderNumber
         ],
         ['DxEvolutionID' => $dxEvolutionID]
     );

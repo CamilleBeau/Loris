@@ -48,7 +48,7 @@ class Diagnosis_Evolution extends \NDB_Form
     function setup()
     {
         parent::setup();
-        $DB      = \Database::singleton();
+        $DB = \Database::singleton();
 
         $visits      = \Utility::getVisitList();
         $instruments = \Utility::getAllInstruments();
@@ -63,7 +63,7 @@ class Diagnosis_Evolution extends \NDB_Form
         foreach ($parameterType as $key => $record) {
             $sourceFields[$record['Name']] = $record['SourceField'];
         }
-        
+
         $diagnosisTracks = $DB->pselectWithIndexKey(
             "SELECT * FROM diagnosis_evolution
             ORDER BY orderNumber",
@@ -71,10 +71,10 @@ class Diagnosis_Evolution extends \NDB_Form
             'DxEvolutionID'
         );
 
-        $this->tpl_data['visits']           = $visits;
-        $this->tpl_data['instruments']      = $instruments;
-        $this->tpl_data['sourceFields']     = $sourceFields;
-        $this->tpl_data['diagnosisTracks']  = $diagnosisTracks;
+        $this->tpl_data['visits']          = $visits;
+        $this->tpl_data['instruments']     = $instruments;
+        $this->tpl_data['sourceFields']    = $sourceFields;
+        $this->tpl_data['diagnosisTracks'] = $diagnosisTracks;
     }
 
     /**
