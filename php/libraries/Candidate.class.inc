@@ -1000,7 +1000,7 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      */
     function getLatestDiagnosisSource() : ?int 
     {
-        return intval($this->candidateInfo['SourcedFromDxEvolutionID']);
+        return $this->candidateInfo['SourcedFromDxEvolutionID'];
     }
 
     /**
