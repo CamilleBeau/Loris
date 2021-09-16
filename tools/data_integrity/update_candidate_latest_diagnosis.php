@@ -46,18 +46,23 @@ $loris = new \LORIS\LorisInstance(
 foreach ($candIDs as $k => $candID) {
     $candidate       = \Candidate::singleton(new CandID($candID));
     $candidateVisits = $candidate->getListOfVisitLabels();
+
     foreach ($diagnosisTrajectory as $key => $data) {
         // search if candidate has a matching visit
-        $sessionID = array_search($data['visitLabel'], $candidateVisits);
+        $sessionID = array_search($data['visitLabel'], array_reverse($candidateVisits, true));
         if ($sessionID) {
+            // Get projectID of this session
+            $timepoint = \TimePoint::singleton(new SessionID($sessionID));
+            $projectID = $timepoint->getProjectID();
+
             $matchingVL = $candidateVisits[$sessionID];
 
-            // Find instance of complete instrument
+            // Find instance of instrument
+            // TODO: Decide if we should check for COMPLETE instruments only
             $commentID = $DB->pselectOne(
                 "SELECT CommentID FROM flag f
                 WHERE f.SessionID=:sid
                 AND f.Test_name=:tn
-                AND Data_entry='Complete'
                 AND CommentID NOT LIKE 'DDE%'",
                 [
                     'sid' => $sessionID,
@@ -90,18 +95,21 @@ foreach ($candIDs as $k => $candID) {
             }
 
             $set = [
-                'SourcedFromDxEvolutionID' => $data['DxEvolutionID'],
-                'LatestDiagnosis'          => json_encode($latestDiagnosis)
+                'CandID'            => $candID,
+                'ProjectID'         => $projectID,
+                'DxEvolutionID'     => $data['DxEvolutionID'],
+                'LatestDiagnosis'   => json_encode($latestDiagnosis)
             ];
 
             print_r("\nUpdating Latest Diagnosis for CandID: $candID\n");
             print_r("\t" . json_encode($latestDiagnosis) . "\n");
 
-            $DB->unsafeUpdate(
-                'candidate',
-                $set,
-                ['CandID' => $candID]
+            $DB->unsafeInsertOnDuplicateUpdate(
+                'candidate_latest_diagnosis',
+                $set
             );
+            // Go to next candidate
+            break;
         }
     }
 }
