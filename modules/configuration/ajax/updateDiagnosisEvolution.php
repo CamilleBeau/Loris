@@ -26,6 +26,7 @@ $DB = \Database::singleton();
 
 $dxEvolutionID  = $_POST['DxEvolutionID'] ?? null;
 $name           = $_POST['Name'] ?? null;
+$projectID      = $_POST['ProjectID'] ?? null;
 $visit          = $_POST['visitLabel'] ?? null;
 $instrumentName = $_POST['instrumentName'] ?? null;
 $sourceFields   = $_POST['sourceFields'] ?? null;
@@ -39,6 +40,17 @@ if (!($dxEvolutionID && $name && $visit
     && $instrumentName && $sourceFields && $orderNumber)
 ) {
     printAndExit(400, ['error' => 'Please fill out all fields!']);
+}
+
+// Validation: Visit is part of Project's config
+$projectVisits = \Utility::getVisitList(new \ProjectID($projectID));
+if (!array_key_exists($visit, $projectVisits)) {
+    printAndExit(
+        409,
+        ['error' => 'Conflict! Visit is not defined 
+        for selected Project.'
+        ]
+    );
 }
 
 // Validation: Instrument is part of Visit's test battery
@@ -82,6 +94,7 @@ if ($dxEvolutionID == 'new') {
         'diagnosis_evolution',
         [
             "Name"           => $name,
+            "ProjectID"      => $projectID,
             "visitLabel"     => $visit,
             "instrumentName" => $instrumentName,
             "sourceField"    => implode(",", $sourceFields),
@@ -104,6 +117,7 @@ if ($dxEvolutionID == 'new') {
         'diagnosis_evolution',
         [
             "Name"           => $name,
+            "ProjectID"      => $projectID,
             "visitLabel"     => $visit,
             "instrumentName" => $instrumentName,
             "sourceField"    => implode(",", $sourceFields),

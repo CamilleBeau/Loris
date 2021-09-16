@@ -45,6 +45,19 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                         </div>
                         <div class="form-group">
                             <div class="col-sm-12 col-md-3">
+                                <label class="col-sm-12 control-label">Project</label>
+                            </div>
+                            <div class="col-sm-12 col-md-9">
+                                <input list="projects" class="form-control dxTrajectoryProject" name="project" value="{$projects[$diagnosis.ProjectID]}">
+                                <datalist id="projects">
+                                    {foreach from=$projects key=project item=label}
+                                        <option value="{$project}">{$label}</option>
+                                    {/foreach}
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-12 col-md-3">
                                 <label class="col-sm-12 control-label">Visit</label>
                             </div>
                             <div class="col-sm-12 col-md-9">
@@ -118,6 +131,19 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                         </div>
                         <div class="col-sm-12 col-md-9">
                             <input class="form-control dxTrajectoryName" name="name" placeholder="Please add a trajectory name for this diagnosis">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-12 col-md-3">
+                            <label class="col-sm-12 control-label">Project</label>
+                        </div>
+                        <div class="col-sm-12 col-md-9">
+                            <input list="projects" class="form-control dxTrajectoryProject" name="project" placeholder="Please select a project here">
+                            <datalist id="projects">
+                                {foreach from=$projects key=project item=label}
+                                    <option value="{$project}">{$label}</option>
+                                {/foreach}
+                            </datalist>
                         </div>
                     </div>
                     <div class="form-group">

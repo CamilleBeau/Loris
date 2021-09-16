@@ -72,12 +72,15 @@ class DiagnosisEvolution extends Component {
     const dxEvolution = this.state.data.diagnosisEvolution;
     let formattedDxEvolution = [];
     dxEvolution.map((record) => {
-      const {name, diagnosis} = record;
+      const {name, project, visit, instrument, diagnosis} = record;
       Object.entries(diagnosis).map((entry) => {
         const [fieldName, dx] = entry;
         formattedDxEvolution.push(
           [
             name,
+            project,
+            visit,
+            instrument,
             fieldName,
             dx,
           ]
@@ -140,6 +143,9 @@ class DiagnosisEvolution extends Component {
           <StaticDataTable
             Headers={[
               'Trajectory Name',
+              'Project',
+              'Visit',
+              'Instrument',
               'Source Field',
               'Diagnosis',
             ]}

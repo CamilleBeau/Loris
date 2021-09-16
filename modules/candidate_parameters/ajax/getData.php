@@ -591,9 +591,11 @@ function getDiagnosisEvolutionFields(): array
     $diagnosisEvolution = [];
     foreach ($diagnosisTrajectory as $key => $data) {
         $name        = $data['Name'];
-        $sourceField = $data['sourceField'];
-        $instrument  = $data['instrumentName'];
+        $projectID   = $data['ProjectID'];
+        $project     = \Project::getProjectFromID(new \ProjectID($projectID));
         $visit       = $data['visitLabel'];
+        $instrument  = $data['instrumentName'];
+        $sourceField = $data['sourceField'];
         $orderNumber = $data['orderNumber'];
 
         $diagnosisData = $db->pselectRow(
@@ -603,14 +605,18 @@ function getDiagnosisEvolutionFields(): array
             WHERE s.CandID=:candID 
             AND i.CommentID NOT LIKE 'DDE%'
             AND s.Visit_label=:visit
+            AND s.ProjectID=:projID
             AND f.Test_name=:tn",
-            ['candID' => $candID, 'visit' => $visit, 'tn' => $instrument]
+            ['candID' => $candID, 'visit' => $visit, 'projID' => $projectID, 'tn' => $instrument]
         );
 
         if (!is_null($diagnosisData)) {
             $diagnosisEvolution[] = [
-                'name'      => $name,
-                'diagnosis' => $diagnosisData
+                'name'          => $name,
+                'project'       => $project,
+                'visit'         => $visit,
+                'instrument'    => $instrument,
+                'diagnosis'     => $diagnosisData
             ];
         }
     }

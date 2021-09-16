@@ -22,6 +22,7 @@ $(document).ready(function() {
 
       var DxEvolutionID = $(form.find(".DxEvolutionID")).val();
       var Name = $(form.find(".dxTrajectoryName")).val();
+      var ProjectID = $(form.find(".dxTrajectoryProject")).val();
       var visitLabel = $(form.find(".dxTrajectoryVisit")).val();
       var instrumentName = $(form.find(".dxTrajectoryInstrumentName")).val();
       var sourceFields = $(form.find(".dxTrajectorySourceField")).map((input, el) => {
@@ -29,7 +30,6 @@ $(document).ready(function() {
           return el.value
         }
       }).get();
-      console.log(sourceFields);
       var orderNumber = $(form.find(".dxTrajectoryOrderNumber")).val();
 
       e.preventDefault();
@@ -59,6 +59,7 @@ $(document).ready(function() {
             "data" : {
                 "DxEvolutionID" : DxEvolutionID,
                 "Name" : Name,
+                "ProjectID" : ProjectID,
                 "visitLabel" : visitLabel,
                 "instrumentName" : instrumentName,
                 "sourceFields" : sourceFields,
