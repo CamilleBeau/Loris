@@ -50,6 +50,7 @@ class Diagnosis_Evolution extends \NDB_Form
         parent::setup();
         $DB = \Database::singleton();
 
+        $projects    = \Utility::getProjectList();
         $visits      = \Utility::getVisitList();
         $instruments = \Utility::getAllInstruments();
 
@@ -71,6 +72,7 @@ class Diagnosis_Evolution extends \NDB_Form
             'DxEvolutionID'
         );
 
+        $this->tpl_data['projects']        = $projects;
         $this->tpl_data['visits']          = $visits;
         $this->tpl_data['instruments']     = $instruments;
         $this->tpl_data['sourceFields']    = $sourceFields;
