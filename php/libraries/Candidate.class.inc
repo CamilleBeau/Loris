@@ -97,8 +97,7 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
             c.EDC, c.Sex, c.Entity_type,
             p.Name AS PSC, c.Ethnicity,
             c.Active, u1.Real_name as RegisteredBy, 
-            c.UserID, c.RegistrationProjectID,
-            c.LatestDiagnosis, c.SourcedFromDxEvolutionID
+            c.UserID, c.RegistrationProjectID
             FROM candidate as c
             LEFT JOIN psc as p ON (p.CenterID=c.RegistrationCenterID)
             LEFT JOIN users as u1 ON (u1.UserID = c.RegisteredBy)
@@ -986,22 +985,46 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      * Returns the candidate's latest diagnosis defined by
      * the configured diagnosis trajectory.
      *
-     * @return string|null JSON of LatestDiagnosis
+     * @return array|null JSON of LatestDiagnosis
      */
-    function getLatestDiagnosis() : ?string
+    function getLatestDiagnosis(?ProjectID $projectID = null) : ?array
     {
-        return $this->candidateInfo['LatestDiagnosis'];
+        $DB           =& Database::singleton();
+        $whereProject = '';
+        if ($projectID != null) {
+            $whereProject = " AND ProjectID=$projectID";
+        }
+
+        $latestDx = $DB->pselect(
+            "SELECT LatestDiagnosis, DxEvolutionID, ProjectID 
+            FROM candidate_latest_diagnosis
+            WHERE CandID=:candID"
+            . $whereProject,
+            ['candID' => $this->getCandID()]
+        );
+
+        return $latestDx;
     }
 
     /**
      * Returns the DxEvolutionID for which the latest diagnosis
-     * is based on.
+     * of the specified project is based on.
      *
      * @return int|null the DxEvolutionID that LatestDiagnosis is based on
      */
-    function getLatestDiagnosisSource() : ?int
-    {
-        return intval($this->candidateInfo['SourcedFromDxEvolutionID']);
+    function getLatestDiagnosisSource(?ProjectID $projectID) {
+        $DB           =& Database::singleton();
+        $latestDxEvolutionID = $DB->pselectOne(
+            "SELECT DxEvolutionID 
+            FROM candidate_latest_diagnosis
+            WHERE  ProjectID=:projID
+            AND CandID=:candID",
+            [
+                'projID' => $projectID,
+                'candID' => $this->getCandID()
+            ]
+        );
+        return $latestDxEvolutionID;
     }
 
     /**

@@ -95,7 +95,8 @@ class DiagnosisEvolution extends Component {
    * @return {JSX} - React markup for the component
    */
   renderLatestDiagnosis() {
-    const latestDiagnosis = this.state.data.latestDiagnosis;
+    const latestDiagnosis = this.state.data.latestDiagnosis.LatestDiagnosis;
+    // TODO: Fix display
     const diagnosis = latestDiagnosis ?
       Object.values(JSON.parse(latestDiagnosis)).join(', ') : '';
 

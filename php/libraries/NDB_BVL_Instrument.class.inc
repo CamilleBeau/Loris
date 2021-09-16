@@ -2271,10 +2271,9 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         // LatestDiagnosis is formatted as JSON and ensures that this is safe.
         // If we use the safe wrapper, HTML encoding the quotation marks
         // will make it invalid JSON.
-        $DB->unsafeUpdate(
-            'candidate',
-            $latestDx,
-            ['PSCID' => $this->getPSCID()]
+        $DB->unsafeInsertOnDuplicateUpdate(
+            'candidate_latest_diagnosis',
+            $latestDx
         );
     }
 
@@ -2314,8 +2313,13 @@ abstract class NDB_BVL_Instrument extends NDB_Page
 
         $candidate = \Candidate::singleton(new CandID($this->getCandID()));
 
+        // Get projectID of this session
+        $sessionID = $this->getSessionID();
+        $timepoint = \TimePoint::singleton($sessionID);
+        $projectID = $timepoint->getProjectID();
+
         // Get the DxEvolutionID of the candidate's CURRENT diagnosis trajectory
-        $currentDxEvolutionID = $candidate->getLatestDiagnosisSource();
+        $currentDxEvolutionID = $candidate->getLatestDiagnosisSource($projectID);
 
         $orderNumberClause = "";
         if (!is_null($currentDxEvolutionID)) {
@@ -2334,13 +2338,17 @@ abstract class NDB_BVL_Instrument extends NDB_Page
                 sourceField, 
                 MAX(OrderNumber) as OrderNumber
             FROM diagnosis_evolution
-            WHERE instrumentName=:tn "
+            WHERE instrumentName=:tn
+            AND ProjectID=:projID "
             . $orderNumberClause
             . "GROUP BY DxEvolutionID, sourceField";
 
         $newDiagnosisTrajectory = $DB->pselectRow(
             $query,
-            ['tn' => $this->testName]
+            [
+                'tn'     => $this->testName,
+                'projID' => $projectID
+            ]
         );
 
         if (is_null($newDiagnosisTrajectory)) {
@@ -2362,8 +2370,10 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         }
 
         $latestDiagnosis = [
-            'SourcedFromDxEvolutionID' => $newDiagnosisTrajectory['DxEvolutionID'],
-            'LatestDiagnosis'          => json_encode($diagnosis)
+            'CandID'            => $this->getCandID(),
+            'ProjectID'         => $projectID,
+            'DxEvolutionID'     => $newDiagnosisTrajectory['DxEvolutionID'],
+            'LatestDiagnosis'   => json_encode($diagnosis)
         ];
 
         return $latestDiagnosis;
