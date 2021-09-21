@@ -197,7 +197,7 @@ CREATE TABLE `candidate_latest_diagnosis` (
   `DxEvolutionID` int(10) unsigned NOT NULL,
   `LatestDiagnosis` text DEFAULT NULL,
   PRIMARY KEY (`ID`),
-  UNIQUE KEY `latestProjDx` (`CandID`, `ProjectID`, `DxEvolutionID`),
+  UNIQUE KEY `latestProjDx` (`CandID`, `ProjectID`),
   CONSTRAINT `FK_LatestDX_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`),
   CONSTRAINT `FK_LatestDX_2` FOREIGN KEY (`ProjectID`) REFERENCES `Project` (`ProjectID`),
   CONSTRAINT `FK_LatestDX_3` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
