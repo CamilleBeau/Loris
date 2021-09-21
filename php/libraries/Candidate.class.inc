@@ -985,6 +985,8 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      * Returns the candidate's latest diagnosis defined by
      * the configured diagnosis trajectory.
      *
+     * @param \ProjectID $projectID ProjectID
+     *
      * @return array|null JSON of LatestDiagnosis
      */
     function getLatestDiagnosis(?ProjectID $projectID = null) : ?array
@@ -1010,10 +1012,13 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      * Returns the DxEvolutionID for which the latest diagnosis
      * of the specified project is based on.
      *
+     * @param \ProjectID $projectID ProjectID
+     *
      * @return int|null the DxEvolutionID that LatestDiagnosis is based on
      */
-    function getLatestDiagnosisSource(?ProjectID $projectID) {
-        $DB           =& Database::singleton();
+    function getLatestDiagnosisSource(?ProjectID $projectID)
+    {
+        $DB =& Database::singleton();
         $latestDxEvolutionID = $DB->pselectOne(
             "SELECT DxEvolutionID 
             FROM candidate_latest_diagnosis

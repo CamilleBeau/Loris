@@ -56,7 +56,10 @@ foreach ($candIDs as $k => $candID) {
     foreach ($diagnosisTrajectoryByProject as $projectID => $projectTrajectories) {
         foreach ($projectTrajectories as $key => $data) {
             // search if candidate has a matching visit
-            $sessionID = array_search($data['visitLabel'], array_reverse($candidateVisits, true));
+            $sessionID = array_search(
+                $data['visitLabel'],
+                array_reverse($candidateVisits, true)
+            );
             if ($sessionID) {
                 // Get projectID of this session
                 $timepoint = \TimePoint::singleton(new SessionID($sessionID));
@@ -102,10 +105,10 @@ foreach ($candIDs as $k => $candID) {
                 }
 
                 $set = [
-                    'CandID'            => $candID,
-                    'ProjectID'         => $projectID,
-                    'DxEvolutionID'     => $data['DxEvolutionID'],
-                    'LatestDiagnosis'   => json_encode($latestDiagnosis)
+                    'CandID'          => $candID,
+                    'ProjectID'       => $projectID,
+                    'DxEvolutionID'   => $data['DxEvolutionID'],
+                    'LatestDiagnosis' => json_encode($latestDiagnosis)
                 ];
 
                 print_r("\nUpdating Latest Diagnosis for CandID: $candID\n");

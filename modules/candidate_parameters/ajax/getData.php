@@ -607,16 +607,21 @@ function getDiagnosisEvolutionFields(): array
             AND s.Visit_label=:visit
             AND s.ProjectID=:projID
             AND f.Test_name=:tn",
-            ['candID' => $candID, 'visit' => $visit, 'projID' => $projectID, 'tn' => $instrument]
+            [
+                'candID' => $candID,
+                'visit'  => $visit,
+                'projID' => $projectID,
+                'tn'     => $instrument
+            ]
         );
 
         if (!is_null($diagnosisData)) {
             $diagnosisEvolution[] = [
-                'name'          => $name,
-                'project'       => $project,
-                'visit'         => $visit,
-                'instrument'    => $instrument,
-                'diagnosis'     => $diagnosisData
+                'name'       => $name,
+                'project'    => $project,
+                'visit'      => $visit,
+                'instrument' => $instrument,
+                'diagnosis'  => $diagnosisData
             ];
         }
 
