@@ -95,17 +95,23 @@ class DiagnosisEvolution extends Component {
    * @return {JSX} - React markup for the component
    */
   renderLatestDiagnosis() {
-    const latestDiagnosis = this.state.data.latestDiagnosis.LatestDiagnosis;
-    // TODO: Fix display
-    const diagnosis = latestDiagnosis ?
-      Object.values(JSON.parse(latestDiagnosis)).join(', ') : '';
+    const latestDiagnosis = this.state.data.latestDiagnosis;
+    let element = [];
 
-    return (
-      <StaticElement
-        label='Latest Diagnosis'
-        text={diagnosis}
-      />
-    );
+    latestDiagnosis.map((entry) => {
+      const projectName = this.state.data.projects[entry.ProjectID];
+      const diagnosis = entry.LatestDiagnosis ?
+        Object.values(JSON.parse(entry.LatestDiagnosis)).join(', ') : '';
+
+      element.push(
+        <StaticElement
+          key={entry.DxEvolutionID}
+          label={projectName}
+          text={diagnosis}
+        />
+      );
+    });
+    return element;
   }
 
   /**
@@ -128,7 +134,7 @@ class DiagnosisEvolution extends Component {
           name='diagnosisEvolution'
           onSubmit={this.handleSubmit}
           ref='form'
-          class='col-md-6'
+          class='col-md-8'
         >
           <StaticElement
             label='PSCID'
@@ -138,6 +144,7 @@ class DiagnosisEvolution extends Component {
             label='DCCID'
             text={this.state.data.candID}
           />
+          <h3>Latest Diagnosis</h3>
           {this.renderLatestDiagnosis()}
           <br></br>
           <h3>Diagnosis Evolution</h3>

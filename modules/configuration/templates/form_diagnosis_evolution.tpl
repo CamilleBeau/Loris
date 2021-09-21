@@ -48,12 +48,16 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                                 <label class="col-sm-12 control-label">Project</label>
                             </div>
                             <div class="col-sm-12 col-md-9">
-                                <input list="projects" class="form-control dxTrajectoryProject" name="project" value="{$projects[$diagnosis.ProjectID]}">
-                                <datalist id="projects">
-                                    {foreach from=$projects key=project item=label}
-                                        <option value="{$project}">{$label}</option>
+                                <select class="form-control dxTrajectoryProject" name="project">
+                                    <option value=""></option>
+                                    {foreach from=$projects key=projectID item=projName}
+                                        {if $projectID == $diagnosis.ProjectID}
+                                            <option value="{$projectID}" selected>{$projName}</option>
+                                        {else}
+                                            <option value="{$projectID}">{$projName}</option>
+                                        {/if}
                                     {/foreach}
-                                </datalist>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group">
@@ -138,12 +142,12 @@ To configure study projects <a href="{$baseurl}/configuration/project/">click he
                             <label class="col-sm-12 control-label">Project</label>
                         </div>
                         <div class="col-sm-12 col-md-9">
-                            <input list="projects" class="form-control dxTrajectoryProject" name="project" placeholder="Please select a project here">
-                            <datalist id="projects">
-                                {foreach from=$projects key=project item=label}
-                                    <option value="{$project}">{$label}</option>
+                            <select class="form-control dxTrajectoryProject" name="project">
+                                <option value="" disabled selected>Please select a project here</option>
+                                {foreach from=$projects key=projectID item=projName}
+                                    <option value="{$projectID}">{$projName}</option>
                                 {/foreach}
-                            </datalist>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group">

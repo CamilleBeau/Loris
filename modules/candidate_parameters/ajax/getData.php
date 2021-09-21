@@ -619,6 +619,8 @@ function getDiagnosisEvolutionFields(): array
                 'diagnosis'     => $diagnosisData
             ];
         }
+
+        $projects[$projectID] = $project;
     }
 
     $latestDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis();
@@ -627,7 +629,8 @@ function getDiagnosisEvolutionFields(): array
         'pscid'              => $pscid,
         'candID'             => $candID,
         'diagnosisEvolution' => $diagnosisEvolution,
-        'latestDiagnosis'    => $latestDiagnosis
+        'latestDiagnosis'    => $latestDiagnosis,
+        'projects'           => $projects
 
     ];
     return $result;
