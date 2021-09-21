@@ -1,3 +1,4 @@
+-- TODO: Update schema
 CREATE TABLE `diagnosis_evolution` (
   `DxEvolutionID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `Name` varchar(255) DEFAULT NULL,
@@ -9,14 +10,6 @@ CREATE TABLE `diagnosis_evolution` (
   PRIMARY KEY (`DxEvolutionID`),
   CONSTRAINT `FK_DxEvolution_1` FOREIGN KEY (`ProjectID`) REFERENCES `Project` (`ProjectID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- TODO: Remove this and replace with a dx_cand_rel table
--- TODO: Update schema
-ALTER TABLE `candidate`
-  ADD COLUMN `LatestDiagnosis` text DEFAULT NULL,
-  ADD COLUMN `SourcedFromDxEvolutionID` int(10) unsigned DEFAULT NULL,
-  ADD CONSTRAINT `FK_DxEvolutionID` FOREIGN KEY (`SourcedFromDxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
-;
 
 CREATE TABLE `candidate_latest_diagnosis` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
