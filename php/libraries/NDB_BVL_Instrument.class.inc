@@ -2370,10 +2370,10 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         }
 
         $latestDiagnosis = [
-            'CandID'            => $this->getCandID(),
-            'ProjectID'         => $projectID,
-            'DxEvolutionID'     => $newDiagnosisTrajectory['DxEvolutionID'],
-            'LatestDiagnosis'   => json_encode($diagnosis)
+            'CandID'          => $this->getCandID(),
+            'ProjectID'       => $projectID,
+            'DxEvolutionID'   => $newDiagnosisTrajectory['DxEvolutionID'],
+            'LatestDiagnosis' => json_encode($diagnosis)
         ];
 
         return $latestDiagnosis;
