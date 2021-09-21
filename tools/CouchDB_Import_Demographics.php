@@ -108,14 +108,6 @@ class CouchDBDemographicsImporter
             'Description' => 'Behavioural feedback at the session level',
             'Type'        => "varchar(255)",
         ],
-        'LatestDiagnosis'          => [
-            'Description' => 'Candidate\'s Latest Diagnosis',
-            'Type'        => "text",
-        ],
-        'SourcedFromDxEvolutionID' => [
-            'Description' => 'Source of Latest Diagnosis (DXEvolutionID)',
-            'Type'        => "int(10)",
-        ],
     ];
 
     var $Config = [
@@ -254,9 +246,7 @@ class CouchDBDemographicsImporter
                         pc_comment.Value, 
                         pso.Description, 
                         ps.participant_suboptions, 
-                        ps.reason_specify,
-                        c.LatestDiagnosis,
-                        c.SourcedFromDxEvolutionID";
+                        ps.reason_specify";
 
         // If proband fields are being used, add proband information into the
         // query
@@ -297,6 +287,25 @@ class CouchDBDemographicsImporter
                             $cField.DateWithdrawn";
             }
         }
+
+        // Latest Diagnosis by project
+        $projects = \Utility::getProjectList();
+        foreach ($projects as $projectID => $project) {
+            $projectName = str_replace(' ', '_', $project);
+            $tempTbl = "latestDx_". $projectName;
+
+            $diagnosisFields = ", 
+                $tempTbl.LatestDiagnosis AS latestDiagnosis_$projectName";
+            $fieldsInQuery .= $diagnosisFields;
+            $tablesToJoin .= "
+                            LEFT JOIN candidate_latest_diagnosis $tempTbl
+                            ON ($tempTbl.CandID=c.CandID)
+                            AND $tempTbl.ProjectID=$projectID";
+            $groupBy .= ", 
+                $tempTbl.LatestDiagnosis";
+            
+        }
+
         $whereClause = " WHERE s.Active='Y' AND c.Active='Y' "
                        ."AND c.Entity_type != 'Scanner'";
 
@@ -362,6 +371,18 @@ class CouchDBDemographicsImporter
                     'Type'        => "date",
                 ];
             }
+        }
+
+        // Update data dictionary for latest diagnosis by project
+        $projects = \Utility::getProjectList();
+        foreach ($projects as $projectID => $project) {
+            $projectName = str_replace(' ', '_', $project);
+            $fieldName = "latestDiagnosis_" . $projectName;
+            
+            $this->Dictionary[$fieldName] = [
+                'Description'   => "Latest Diagnosis for $project",
+                'Type'          => "text"
+            ];
         }
     }
 
