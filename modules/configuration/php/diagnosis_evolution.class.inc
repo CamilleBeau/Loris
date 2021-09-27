@@ -24,8 +24,10 @@ namespace LORIS\configuration;
  * @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
  * @link     https://github.com/aces/Loris-Trunk
  */
-class Diagnosis_Evolution extends \NDB_Form
+class Diagnosis_Evolution extends \NDB_Page
 {
+    public $skipTemplate = true;
+
     /**
      * _has_access returns true
      * if the user has the specific permission
@@ -39,44 +41,20 @@ class Diagnosis_Evolution extends \NDB_Form
         return $user->hasPermission('config');
     }
 
-
     /**
-     * Loads the project page.
+     * Include additional JS files:
      *
-     * @return void
+     * @return array of javascript to be inserted
      */
-    function setup()
+    function getJSDependencies()
     {
-        parent::setup();
-        $DB = \Database::singleton();
-
-        $projects    = \Utility::getProjectList();
-        $visits      = \Utility::getVisitList();
-        $instruments = \Utility::getAllInstruments();
-
-        $parameterType = $DB->pselect(
-            "SELECT Name, SourceField FROM parameter_type
-            WHERE Queryable='1'
-            ORDER BY Name",
-            []
+        $factory = \NDB_Factory::singleton();
+        $baseURL = $factory->settings()->getBaseURL();
+        $deps    = parent::getJSDependencies();
+        return array_merge(
+            $deps,
+            [$baseURL . "/configuration/js/DiagnosisEvolution.js"]
         );
-
-        foreach ($parameterType as $key => $record) {
-            $sourceFields[$record['Name']] = $record['SourceField'];
-        }
-
-        $diagnosisTracks = $DB->pselectWithIndexKey(
-            "SELECT * FROM diagnosis_evolution
-            ORDER BY orderNumber",
-            [],
-            'DxEvolutionID'
-        );
-
-        $this->tpl_data['projects']        = $projects;
-        $this->tpl_data['visits']          = $visits;
-        $this->tpl_data['instruments']     = $instruments;
-        $this->tpl_data['sourceFields']    = $sourceFields;
-        $this->tpl_data['diagnosisTracks'] = $diagnosisTracks;
     }
 
     /**

@@ -55,7 +55,7 @@ $(document).ready(function() {
       jQuery.ajax(
         {
             "type" : "post",
-            "url" : loris.BaseURL + "/configuration/ajax/updateDiagnosisEvolution.php",
+            "url" : loris.BaseURL + "/configuration/php/diagnosis.class.inc",
             "data" : {
                 "DxEvolutionID" : DxEvolutionID,
                 "Name" : Name,
