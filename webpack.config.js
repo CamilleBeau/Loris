@@ -245,7 +245,7 @@ const config = [
     'CandidateParameters',
     'ConsentWidget',
   ]),
-  lorisModule('configuration', ['SubprojectRelations', 'configuration_helper']),
+  lorisModule('configuration', ['SubprojectRelations', 'configuration_helper', 'DiagnosisEvolution']),
   lorisModule('conflict_resolver', ['conflict_resolver']),
   lorisModule('battery_manager', ['batteryManagerIndex']),
   lorisModule('bvl_feedback', ['react.behavioural_feedback_panel']),
