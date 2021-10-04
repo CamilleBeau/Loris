@@ -3,3 +3,4 @@
 # we can just ignore the whole directory.
 js/SubprojectRelations.js
 js/configuration_helper.js
+js/DiagnosisEvolution.js
