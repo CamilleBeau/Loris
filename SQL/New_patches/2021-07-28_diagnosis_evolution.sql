@@ -1,4 +1,3 @@
--- TODO: Update schema
 CREATE TABLE `diagnosis_evolution` (
   `DxEvolutionID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `Name` varchar(255) DEFAULT NULL,

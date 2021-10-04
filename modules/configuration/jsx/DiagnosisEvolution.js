@@ -30,6 +30,7 @@ class DiagnosisEvolution extends Component {
             },
             error: false,
             isLoaded: false,
+            currentTab: 'new',
         };
 
         this.fetchData = this.fetchData.bind(this);
@@ -43,7 +44,6 @@ class DiagnosisEvolution extends Component {
      * Called by React when the component has been rendered on the page.
      */
     componentDidMount() {
-        console.log('mounting');
         this.fetchData()
             .then(() => this.setState({isLoaded: true}));
     }
@@ -73,8 +73,23 @@ class DiagnosisEvolution extends Component {
      * @param {*} value
      */
     setFormData(formElement, value) {
+        const tabID = this.state.currentTab;
         let formData = this.state.formData;
-        formData[formElement] = value;
+
+        if (tabID == 'new') {
+            let tabData = {
+                ...formData.new,
+                [formElement]: value,
+            };
+            formData.new = tabData;
+        } else {
+            let tabData = {
+                ...formData.diagnosisTracks[tabID],
+                [formElement]: value,
+            };
+            formData.diagnosisTracks[tabID] = tabData;
+        }
+
         this.setState({
             formData: formData,
         });
@@ -86,11 +101,13 @@ class DiagnosisEvolution extends Component {
      * @return {JSX} React markup for the component
      */
     renderDiagnosisForm(dxEvolutionID) {
-        console.log(dxEvolutionID);
-        const trajectoryData = dxEvolutionID == 'new' ?
+        console.log(this.state.formData);
+        const id = typeof dxEvolutionID !== 'undefined' ?
+            dxEvolutionID : this.state.currentTab;
+        const trajectoryData = id == 'new' ?
             this.state.formData.new :
-            this.state.formData.diagnosisTracks[dxEvolutionID];
-        console.log(trajectoryData);
+            this.state.formData.diagnosisTracks[id];
+
         return (
             <TabPane TabId={`${dxEvolutionID}`} key={dxEvolutionID}>
                 <div className='row'>
@@ -105,14 +122,14 @@ class DiagnosisEvolution extends Component {
                             legend='Register Trajectory'
                         >
                             <TextboxElement
-                                name='name'
+                                name='Name'
                                 label='Trajectory Name'
                                 onUserInput={this.setFormData}
                                 value={trajectoryData.Name}
                                 required={true}
                             />
                             <SearchableDropdown
-                                name='project'
+                                name='ProjectID'
                                 label='Project'
                                 options={this.state.formData.projects}
                                 onUserInput={this.setFormData}
@@ -120,7 +137,7 @@ class DiagnosisEvolution extends Component {
                                 required={true}
                             />
                             <SearchableDropdown
-                                name='visit'
+                                name='visitLabel'
                                 label='Visit'
                                 options={this.state.formData.visits}
                                 onUserInput={this.setFormData}
@@ -128,7 +145,7 @@ class DiagnosisEvolution extends Component {
                                 required={true}
                             />
                             <SearchableDropdown
-                                name='instrument'
+                                name='instrumentName'
                                 label='Instrument'
                                 options={this.state.formData.instruments}
                                 onUserInput={this.setFormData}
@@ -146,9 +163,7 @@ class DiagnosisEvolution extends Component {
                                 value={trajectoryData.pendingSourceField ?
                                     trajectoryData.pendingSourceField :
                                     null}
-                                items={trajectoryData.sourceField ?
-                                    trajectoryData.sourceField.split(',') :
-                                    []}
+                                items={trajectoryData.sourceField || []}
                                 required={true}
                                 btnLabel='Add Field'
                                 pendingValKey='pendingSourceField'
@@ -201,7 +216,6 @@ class DiagnosisEvolution extends Component {
         tabList.push({id: 'new', label: 'New Diagnosis Trajectory'});
 
         let diagnosisTracks = [];
-        console.log(this.state.formData);
         const trajectories = this.state.formData.diagnosisTracks;
         if (trajectories) {
             Object.values(trajectories).map((trajectory) => {
@@ -232,7 +246,7 @@ class DiagnosisEvolution extends Component {
                     tabs={tabList}
                     defaultTab='new'
                     updateURL={false}
-                    onTabChange={(tabId) => console.log(tabId)}
+                    onTabChange={(tabId) => this.setState({currentTab: tabId})}
                 >
                     {this.state.isLoaded && this.renderDiagnosisForm('new')}
                     {diagnosisTracks}
@@ -248,6 +262,36 @@ class DiagnosisEvolution extends Component {
      */
     handleSubmit(e) {
         e.preventDefault();
+        console.log('submit');
+
+        const tabID = this.state.currentTab;
+        let formData = tabID == 'new' ?
+            this.state.formData.new :
+            this.state.formData.diagnosisTracks[tabID];
+        console.log(formData);
+        let formObject = new FormData();
+        for (let key in formData) {
+            console.log(key);
+            if (formData[key] !== '') {
+                formObject.append(key, formData[key]);
+            }
+        }
+        formObject.append('fire_away', 'Diagnosis Trajectory');
+        console.log(formObject);
+        fetch(this.props.submitURL, {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            body: formObject,
+        }).then((resp) => {
+            if (resp.ok && resp.status === 201) {
+                resp.json().then((data) => console.log(data));
+            } else {
+                resp.json().then((message) => console.log(message));
+            }
+        }).catch((error) => {
+            console.log(error);
+        });
     }
 
     /**
@@ -267,15 +311,23 @@ class DiagnosisEvolution extends Component {
      * @param {*} id
      */
     addSourceField(formElement, value, pendingValKey, id) {
-        console.log(id);
+        const tabID = this.state.currentTab;
         let formData = this.state.formData;
-        let listItems = formData[formElement] || [];
-        listItems.push(value);
-        formData[formElement] = listItems;
-        formData[pendingValKey] = null;
-        this.setState({
-          formData: formData,
-        });
+
+        if (tabID == 'new') {
+            let listItems = formData.new[formElement] || [];
+            listItems.push(value);
+            formData.new[formElement] = listItems;
+            formData.new[pendingValKey] = null;
+        } else {
+            let listItems =
+                formData.diagnosisTracks[tabID][formElement] || [];
+            console.log(listItems);
+            listItems.push(value);
+            formData.diagnosisTracks[tabID][formElement] = listItems;
+            formData.diagnosisTracks[tabID][pendingValKey] = null;
+        }
+        this.setState({formData: formData});
     }
 
     /**
@@ -285,18 +337,26 @@ class DiagnosisEvolution extends Component {
      * @param {*} pendingValKey
      */
     removeSourceField(formElement, value) {
+        const tabID = this.state.currentTab;
         let formData = this.state.formData;
-        let listItems = formData[formElement];
-        let index = listItems.indexOf(value);
 
-        if (index > -1) {
-          listItems.splice(index, 1);
-
-          formData[formElement] = listItems;
-          this.setState({
-            formData: formData,
-          });
+        if (tabID == 'new') {
+            let listItems = formData.new[formElement];
+            let index = listItems.indexOf(value);
+            if (index > -1) {
+                listItems.splice(index, 1);
+            }
+            formData.new[formElement] = listItems;
+        } else {
+            let listItems =
+                formData.diagnosisTracks[tabID][formElement];
+            let index = listItems.indexOf(value);
+            if (index > -1) {
+                listItems.splice(index, 1);
+            }
+            formData.diagnosisTracks[tabID][formElement] = listItems;
         }
+        this.setState({formData: formData});
     }
 }
 
@@ -310,8 +370,7 @@ window.addEventListener('load', () => {
     ReactDOM.render(
         <DiagnosisEvolution
             dataURL={`${loris.BaseURL}/configuration/diagnosis`}
-            tabName={''}
-            action={''}
+            submitURL={`${loris.BaseURL}/configuration/diagnosis`}
         />,
         document.getElementById('lorisworkspace')
     );
