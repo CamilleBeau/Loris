@@ -36,6 +36,7 @@ class DiagnosisEvolution extends Component {
         this.fetchData = this.fetchData.bind(this);
         this.setFormData = this.setFormData.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleReset = this.handleReset.bind(this);
         this.addSourceField = this.addSourceField.bind(this);
         this.removeSourceField = this.removeSourceField.bind(this);
     }
@@ -181,6 +182,7 @@ class DiagnosisEvolution extends Component {
                             />
                             <div>
                                 <ButtonElement
+                                    name='submit'
                                     label='Save'
                                     type='submit'
                                     onUserInput={this.handleSubmit}
@@ -234,13 +236,10 @@ class DiagnosisEvolution extends Component {
                 </p>
                 <p>
                     To configure study subprojects
-                     <a href="{$baseurl}/configuration/subproject/">
-                        click here
+                    <a href="{$baseurl}/configuration/subproject/"> click here
                     </a>.
                     To configure study projects
-                     <a href="{$baseurl}/configuration/project/">
-                        click here
-                    </a>.
+                    <a href="{$baseurl}/configuration/project/"> click here</a>.
                 </p>
                 <VerticalTabs
                     tabs={tabList}
@@ -262,7 +261,6 @@ class DiagnosisEvolution extends Component {
      */
     handleSubmit(e) {
         e.preventDefault();
-        console.log('submit');
 
         const tabID = this.state.currentTab;
         let formData = tabID == 'new' ?
@@ -271,12 +269,10 @@ class DiagnosisEvolution extends Component {
         console.log(formData);
         let formObject = new FormData();
         for (let key in formData) {
-            console.log(key);
             if (formData[key] !== '') {
                 formObject.append(key, formData[key]);
             }
         }
-        formObject.append('fire_away', 'Diagnosis Trajectory');
         console.log(formObject);
         fetch(this.props.submitURL, {
             method: 'POST',
@@ -284,10 +280,16 @@ class DiagnosisEvolution extends Component {
             credentials: 'same-origin',
             body: formObject,
         }).then((resp) => {
-            if (resp.ok && resp.status === 201) {
-                resp.json().then((data) => console.log(data));
+            if (resp.ok) {
+                swal('Submission Successful!', '', 'success');
+                window.location.href =
+                    `${loris.BaseURL}/configuration/diagnosis_evolution`;
             } else {
-                resp.json().then((message) => console.log(message));
+                resp.json().then((msg) => {
+                    let status = resp.status == 409 ?
+                        'Conflict!' : 'Error!';
+                    swal(status, msg.error, 'error');
+                });
             }
         }).catch((error) => {
             console.log(error);
@@ -300,7 +302,18 @@ class DiagnosisEvolution extends Component {
      * @param {event} e - Form submission event
      */
     handleReset(e) {
+        e.preventDefault();
+        const tabID = this.state.currentTab;
+        const index = tabID == 'new' ?
+            'new' : 'diagnosisTracks[tabID]';
+        let formData = this.state.formData[index];
+        for (let key in formData) {
+            if (key !== 'DxEvolutionID') {
+                formData[key] = null;
+            }
+        }
 
+        this.setState({[index]: formData});
     }
 
     /**
@@ -310,7 +323,7 @@ class DiagnosisEvolution extends Component {
      * @param {*} pendingValKey
      * @param {*} id
      */
-    addSourceField(formElement, value, pendingValKey, id) {
+    addSourceField(formElement, value, pendingValKey) {
         const tabID = this.state.currentTab;
         let formData = this.state.formData;
 

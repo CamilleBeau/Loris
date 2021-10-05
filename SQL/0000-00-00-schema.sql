@@ -150,6 +150,7 @@ CREATE TABLE `diagnosis_evolution` (
   `sourceField` varchar(255) DEFAULT NULL,
   `orderNumber` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`DxEvolutionID`),
+  UNIQUE KEY `TrajectoryName` (`Name`),
   CONSTRAINT `FK_DxEvolution_1` FOREIGN KEY (`ProjectID`) REFERENCES `Project` (`ProjectID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
