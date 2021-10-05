@@ -102,7 +102,6 @@ class DiagnosisEvolution extends Component {
      * @return {JSX} React markup for the component
      */
     renderDiagnosisForm(dxEvolutionID) {
-        console.log(this.state.formData);
         const id = typeof dxEvolutionID !== 'undefined' ?
             dxEvolutionID : this.state.currentTab;
         const trajectoryData = id == 'new' ?
@@ -266,14 +265,12 @@ class DiagnosisEvolution extends Component {
         let formData = tabID == 'new' ?
             this.state.formData.new :
             this.state.formData.diagnosisTracks[tabID];
-        console.log(formData);
         let formObject = new FormData();
         for (let key in formData) {
             if (formData[key] !== '') {
                 formObject.append(key, formData[key]);
             }
         }
-        console.log(formObject);
         fetch(this.props.submitURL, {
             method: 'POST',
             cache: 'no-cache',
@@ -335,7 +332,6 @@ class DiagnosisEvolution extends Component {
         } else {
             let listItems =
                 formData.diagnosisTracks[tabID][formElement] || [];
-            console.log(listItems);
             listItems.push(value);
             formData.diagnosisTracks[tabID][formElement] = listItems;
             formData.diagnosisTracks[tabID][pendingValKey] = null;
