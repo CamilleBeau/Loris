@@ -15,7 +15,7 @@
 {function name=createInstrument}
 <div>
     <select class="form-control" name="{$k}" {if $d eq "Yes"}disabled{/if}>
-        {foreach from=$visits key=name item=label}
+        {foreach from=$instruments key=name item=label}
             <option {if $v eq $name}selected{/if} value="{$name}">{$label}</option>
         {/foreach}
     </select>
