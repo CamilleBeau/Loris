@@ -61,10 +61,6 @@ foreach ($candIDs as $k => $candID) {
                 array_reverse($candidateVisits, true)
             );
             if ($sessionID) {
-                // Get projectID of this session
-                $timepoint = \TimePoint::singleton(new SessionID($sessionID));
-                $projectID = $timepoint->getProjectID();
-
                 $matchingVL = $candidateVisits[$sessionID];
 
                 // Find instance of instrument
