@@ -83,21 +83,6 @@ class Diagnosis extends \NDB_Page
         );
     }
 
-        /**
-     * Processes the values & saves to database and return a json response.
-     *
-     * @param ServerRequestInterface $request The incoming PSR7 request.
-     *
-     * @return ResponseInterface The outgoing PSR7 response
-     */
-    private function _handlePOST(ServerRequestInterface $request) : ResponseInterface
-    {
-        $this->updateDiagnosisTrajectory($request);
-        return new \LORIS\Http\Response\JsonResponse(
-            []
-        );
-    }
-
     /**
      * Loads the project page.
      *
@@ -130,8 +115,8 @@ class Diagnosis extends \NDB_Page
         );
 
         foreach ($diagnosisTracks as $key => $data) {
-            $diagnosisTracks[$key]['sourceField'] = 
-                explode(",", $diagnosisTracks[$key]['sourceField']);
+            $diagnosisTracks[$key]['sourceField']
+                = explode(",", $diagnosisTracks[$key]['sourceField']);
         }
 
         $values['projects']        = $projects;
@@ -144,19 +129,132 @@ class Diagnosis extends \NDB_Page
     }
 
     /**
-     * Processes trajectory data submitted via diagnosis evolution form.
+     * Processes the values & saves to database and return a json response.
      *
      * @param ServerRequestInterface $request The incoming PSR7 request.
      *
      * @return ResponseInterface The outgoing PSR7 response
      */
-    function updateDiagnosisTrajectory(ServerRequestInterface $request) : ResponseInterface
+    private function _handlePOST(ServerRequestInterface $request) : ResponseInterface
     {
-        // Parse POST request body.
-        $values = json_decode((string) $request->getBody(), true) ?? ['hello'];
+        $values = $request->getParsedBody();
 
-        // TODO: finish implementation
-        error_log(print_r($values, true));
+        $dxEvolutionID  = $values['DxEvolutionID'] ?? null;
+        $name           = $values['Name'] ?? null;
+        $projectID      = $values['ProjectID'] ?? null;
+        $visit          = $values['visitLabel'] ?? null;
+        $instrumentName = $values['instrumentName'] ?? null;
+        $sourceFields   = explode(',', $values['sourceField']) ?? [];
+        $orderNumber    = $values['orderNumber'] ?? null;
+
+        /**
+        * VALIDATE THE FORM
+        */
+        // Validation: Form is complete
+        if (!($dxEvolutionID && $name && $visit
+            && $instrumentName && $sourceFields && $orderNumber)
+        ) {
+            return new \LORIS\Http\Response\JSON\BadRequest(
+                'Please fill out all fields!'
+            );
+        }
+
+        // Validation: Visit is part of Project's config
+        $projectVisits = \Utility::getVisitList(new \ProjectID($projectID));
+        if (!array_key_exists($visit, $projectVisits)) {
+            return new \LORIS\Http\Response\JSON\Conflict(
+                'Visit is not defined for selected Project.'
+            );
+        }
+
+        // Validation: Instrument is part of Visit's test battery
+        $visitInstruments = \Utility::getVisitInstruments($visit);
+        if (!array_key_exists($instrumentName, $visitInstruments)) {
+            return new \LORIS\Http\Response\JSON\Conflict(
+                'Instrument does not exist in selected visit.'
+            );
+        }
+
+        // Validation: Source Field belongs to Instrument
+        $instrumentFields = array_column(
+            \Utility::getSourcefields($instrumentName),
+            'Name'
+        );
+        $matches          = array_intersect($sourceFields, $instrumentFields);
+        if (count($matches) !== count($sourceFields)) {
+            return new \LORIS\Http\Response\JSON\Conflict(
+                'Source Field does not exist in instrument.'
+            );
+        }
+
+        $set = [
+            "Name"           => $name,
+            "ProjectID"      => $projectID,
+            "visitLabel"     => $visit,
+            "instrumentName" => $instrumentName,
+            "sourceField"    => implode(',', $sourceFields),
+            "orderNumber"    => $orderNumber
+        ];
+
+        return $this->updateDiagnosisTrajectory($dxEvolutionID, $set);
+    }
+
+    /**
+     * Processes trajectory data submitted via diagnosis evolution form.
+     *
+     * @param string $dxEvolutionID The Diagnosis Track ID
+     * @param array  $set           The data to insert oir update in the DB
+     *
+     * @return ResponseInterface The outgoing PSR7 response
+     */
+    function updateDiagnosisTrajectory(
+        string $dxEvolutionID,
+        array $set
+    ) : ResponseInterface {
+        $DB = \Database::singleton();
+
+        // Create or update a Diagnosis Trajectory
+        if ($dxEvolutionID == 'new') {
+            // Validation: Name does not already exist
+            $dxNames = $DB->pselectCol(
+                "SELECT Name FROM diagnosis_evolution",
+                []
+            );
+            if (in_array($set['Name'], $dxNames)) {
+                return new \LORIS\Http\Response\JSON\Conflict(
+                    'Trajectory Name already exists.'
+                );
+            }
+
+            $DB->insert(
+                'diagnosis_evolution',
+                $set
+            );
+            return new \LORIS\Http\Response\JSON\OK();
+        } else {
+            // Validation: Name does not already exist
+            $dxNames = $DB->pselectCol(
+                "SELECT Name FROM diagnosis_evolution
+                WHERE DxEvolutionID NOT IN ($dxEvolutionID)",
+                []
+            );
+            if (in_array($set['Name'], $dxNames)) {
+                return new \LORIS\Http\Response\JSON\Conflict(
+                    'Trajectory Name already exists.'
+                );
+            }
+
+            // Update Diagnosis Trajectory
+            $DB->update(
+                'diagnosis_evolution',
+                $set,
+                ['DxEvolutionID' => $dxEvolutionID]
+            );
+            return new \LORIS\Http\Response\JSON\OK();
+        }
+        return new \LORIS\Http\Response\JSON\BadRequest(
+            'Error'
+        );
     }
 
     /**
