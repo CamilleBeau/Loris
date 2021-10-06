@@ -179,7 +179,7 @@ class DiagnosisEvolution extends Component {
                                 value={trajectoryData.orderNumber}
                                 required={true}
                             />
-                            <div>
+                            <div className='btn-container'>
                                 <ButtonElement
                                     name='submit'
                                     label='Save'
