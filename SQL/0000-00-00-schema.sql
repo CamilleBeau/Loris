@@ -198,6 +198,7 @@ CREATE TABLE `candidate_latest_diagnosis` (
   `ProjectID` int(10) unsigned NOT NULL,
   `DxEvolutionID` int(10) unsigned NOT NULL,
   `LatestDiagnosis` text DEFAULT NULL,
+  `LastUpdate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`ID`),
   UNIQUE KEY `latestProjDx` (`CandID`, `ProjectID`),
   CONSTRAINT `FK_LatestDX_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`),

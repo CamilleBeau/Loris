@@ -998,7 +998,7 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         }
 
         $latestDx = $DB->pselect(
-            "SELECT LatestDiagnosis, DxEvolutionID, ProjectID 
+            "SELECT LatestDiagnosis, DxEvolutionID, ProjectID, LastUpdate 
             FROM candidate_latest_diagnosis
             WHERE CandID=:candID"
             . $whereProject,

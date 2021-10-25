@@ -102,12 +102,13 @@ class DiagnosisEvolution extends Component {
       const projectName = this.state.data.projects[entry.ProjectID];
       const diagnosis = entry.LatestDiagnosis ?
         Object.values(JSON.parse(entry.LatestDiagnosis)).join(', ') : '';
+      const updatedOn = entry.LastUpdate;
 
       element.push(
         <StaticElement
           key={entry.DxEvolutionID}
           label={projectName}
-          text={diagnosis}
+          text={diagnosis + ', Last Update: ' + updatedOn}
         />
       );
     });
