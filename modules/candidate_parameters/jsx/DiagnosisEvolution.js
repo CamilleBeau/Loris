@@ -108,7 +108,7 @@ class DiagnosisEvolution extends Component {
         <StaticElement
           key={entry.DxEvolutionID}
           label={projectName}
-          text={diagnosis + ', Last Update: ' + updatedOn}
+          text={`${diagnosis} [Last Update: ${updatedOn}]`}
         />
       );
     });
