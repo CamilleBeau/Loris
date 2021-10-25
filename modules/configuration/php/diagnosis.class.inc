@@ -97,14 +97,14 @@ class Diagnosis extends \NDB_Page
         $instruments = \Utility::getAllInstruments();
 
         $parameterType = $DB->pselect(
-            "SELECT Name FROM parameter_type
+            "SELECT DISTINCT SourceField FROM parameter_type
             WHERE Queryable='1'
-            ORDER BY Name",
+            ORDER BY SourceField",
             []
         );
 
         foreach ($parameterType as $key => $record) {
-            $sourceFields[$record['Name']] = $record['Name'];
+            $sourceFields[$record['SourceField']] = $record['SourceField'];
         }
 
         $diagnosisTracks = $DB->pselectWithIndexKey(
@@ -178,7 +178,7 @@ class Diagnosis extends \NDB_Page
         // Validation: Source Field belongs to Instrument
         $instrumentFields = array_column(
             \Utility::getSourcefields($instrumentName),
-            'Name'
+            'SourceField'
         );
         $matches          = array_intersect($sourceFields, $instrumentFields);
         if (count($matches) !== count($sourceFields)) {
