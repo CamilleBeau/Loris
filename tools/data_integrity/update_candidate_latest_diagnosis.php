@@ -64,7 +64,6 @@ foreach ($candIDs as $k => $candID) {
                 $matchingVL = $candidateVisits[$sessionID];
 
                 // Find instance of instrument
-                // TODO: Decide if we should check for COMPLETE instruments only
                 $commentID = $DB->pselectOne(
                     "SELECT CommentID FROM flag f
                     WHERE f.SessionID=:sid
@@ -90,32 +89,32 @@ foreach ($candIDs as $k => $candID) {
                 $instrumentData = $instrument->getInstanceData();
 
 
-                $latestDiagnosis = [];
+                $diagnosis = [];
                 $sourceFields    = explode(",", $data['sourceField']);
                 foreach ($sourceFields as $k => $fieldName) {
                     // None of the diagnosis components should be empty
                     if (!isset($instrumentData[$fieldName])) {
                         continue 2;
                     }
-                    $latestDiagnosis[$fieldName] = $instrumentData[$fieldName];
+                    $diagnosis[$fieldName] = $instrumentData[$fieldName];
                 }
+
+                $confirmed = \TimePoint::singleton(new SessionID($sessionID))->getApprovalStatus() === 'Pass' ? 'Y' : 'N';
 
                 $set = [
                     'CandID'          => $candID,
-                    'ProjectID'       => $projectID,
                     'DxEvolutionID'   => $data['DxEvolutionID'],
-                    'LatestDiagnosis' => json_encode($latestDiagnosis)
+                    'Diagnosis'       => json_encode($diagnosis),
+                    'Confirmed'       => $confirmed
                 ];
 
-                print_r("\nUpdating Latest Diagnosis for CandID: $candID\n");
-                print_r("\t" . json_encode($latestDiagnosis) . "\n");
+                print_r("\nUpdating Diagnosis Evolution: " . $data['Name'] . " for CandID: $candID\n");
+                print_r("\t" . json_encode($diagnosis) . "\n");
 
                 $DB->unsafeInsertOnDuplicateUpdate(
-                    'candidate_latest_diagnosis',
+                    'candidate_diagnosis_evolution',
                     $set
                 );
-                // Go to next candidate
-                break;
             }
         }
     }

@@ -2241,7 +2241,9 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      */
     function propagateData()
     {
-        $this->propagateLatestDiagnosisData();
+        if (strpos($this->getCommentID(), "DDE") !== false) {
+            $this->propagateLatestDiagnosisData();
+        }
     }
 
     /**
@@ -2257,126 +2259,95 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         $DB =& Database::singleton();
 
         // if the instrument is not part of a configured Dx Tracjectory; return
-        if (!$this->isConfiguredDiagnosisTrack()) {
+        $dxEvolutionID = $this->getConfiguredDiagnosisTrajectory();
+        if (is_null($dxEvolutionID)) {
             return;
         }
 
-        // Determine if candidate's latest diagnosis should be updated with
-        // this instrument's data. If so, update candidate table.
-        $latestDx = $this->determineLatestDiagnosis();
-        if (is_null($latestDx)) {
-            return;
-        }
-
-        // LatestDiagnosis is formatted as JSON and ensures that this is safe.
-        // If we use the safe wrapper, HTML encoding the quotation marks
-        // will make it invalid JSON.
-        $DB->unsafeInsertOnDuplicateUpdate(
-            'candidate_latest_diagnosis',
-            $latestDx
-        );
+        // Update candidate's diagnosis evolution
+        $this->updateCandidateDiagnosisEvolution($dxEvolutionID);
     }
 
     /**
-     * Determines whether an instrument is part of a configured
+     * Determines whether this instrument is part of a configured
      * diagnosis trajectory.
      *
-     * @return bool
+     * @return string|null The DxEvolutionID of this instrument's configured 
+     *                      diagnosis trajectory.
      */
-    function isConfiguredDiagnosisTrack()
+    function getConfiguredDiagnosisTrajectory()
     {
         $DB =& Database::singleton();
+        $timepoint = \TimePoint::singleton($this->getSessionID());
 
         // Check if there is a diagnosis trajectory defined
-        // for this instrument
-        $match = $DB->pselectCol(
-            "SELECT instrumentName FROM diagnosis_evolution
-            WHERE instrumentName=:tn",
-            ['tn' => $this->testName]
+        // for this instrument with current session's visit & project
+        $dxEvolutionID = $DB->pselectOne(
+            "SELECT DxEvolutionID FROM diagnosis_evolution
+            WHERE instrumentName=:tn 
+            AND ProjectID=:pid 
+            AND visitLabel=:vl",
+            [
+                'tn'  => $this->testName,
+                'pid' => $timepoint->getProjectID(),
+                'vl'  => $this->getVisitLabel()
+            ]
         );
 
-        if (is_null($match)) {
-            return false;
-        }
-        return true;
+        return $dxEvolutionID ?? null;
     }
 
     /**
      * Determines whether the candidate's latest diagnosis should be updated.
      * If so, it returns an array containing the source and new diagnosis.
      *
-     * @return array|null
+     * @param string $dxEvolutionID The ID of configured Diagnsosis Trajectory
+     *                              for this instrument & session.
+     * @return void
      */
-    function determineLatestDiagnosis() : ?array
+    function updateCandidateDiagnosisEvolution(string $dxEvolutionID) : void
     {
         $DB =& Database::singleton();
+        $timepoint = \TimePoint::singleton($this->getSessionID());
 
-        $candidate = \Candidate::singleton(new CandID($this->getCandID()));
-
-        // Get projectID of this session
-        $sessionID = $this->getSessionID();
-        $timepoint = \TimePoint::singleton($sessionID);
-        $projectID = $timepoint->getProjectID();
-
-        // Get the DxEvolutionID of the candidate's CURRENT diagnosis trajectory
-        $currentDxEvolutionID = $candidate->getLatestDiagnosisSource($projectID);
-
-        $orderNumberClause = "";
-        if (!is_null($currentDxEvolutionID)) {
-            $orderNumberClause = "AND orderNumber >= (
-                SELECT OrderNumber 
-                FROM diagnosis_evolution
-                WHERE DxEvolutionID=$currentDxEvolutionID
-            )";
-        }
-
-        // select the new diagnosis trajectory if the current instrument
-        // has orderNumber equal to (update) or greater than (new) the candidate's
-        // current DxEvolution
-        $query = "SELECT 
-                DxEvolutionID, 
-                sourceField, 
-                MAX(OrderNumber) as OrderNumber
+        // Get the fields that correspond to a configured diagnosis
+        $sourceFields = $DB->pselectOne(
+            "SELECT sourceField 
             FROM diagnosis_evolution
-            WHERE instrumentName=:tn
-            AND ProjectID=:projID "
-            . $orderNumberClause
-            . "GROUP BY DxEvolutionID, sourceField";
-
-        $newDiagnosisTrajectory = $DB->pselectRow(
-            $query,
-            [
-                'tn'     => $this->testName,
-                'projID' => $projectID
-            ]
+            WHERE DxEvolutionID=:dxEvID",
+            ['dxEvID' => $dxEvolutionID]
         );
-
-        if (is_null($newDiagnosisTrajectory)) {
-            return null;
-        }
 
         $this->instanceData = null;
         $instrumentData     = $this->getInstanceData();
-        $sourceFields       = explode(",", $newDiagnosisTrajectory['sourceField']);
+        $sourceFields       = explode(",", $sourceFields);
 
         $diagnosis = [];
         foreach ($sourceFields as $k => $fieldName) {
             // None of the diagnosis components should be empty
             // If so, the latest diagnosis should not be updated.
             if (is_null($instrumentData[$fieldName])) {
-                return null;
+                return;
             }
             $diagnosis[$fieldName] = $instrumentData[$fieldName];
         }
 
-        $latestDiagnosis = [
+        $confirmed = $timepoint->getApprovalStatus() === 'Pass' ? 'Y' : 'N';
+
+        $set = [
             'CandID'          => $this->getCandID(),
-            'ProjectID'       => $projectID,
-            'DxEvolutionID'   => $newDiagnosisTrajectory['DxEvolutionID'],
-            'LatestDiagnosis' => json_encode($diagnosis)
+            'DxEvolutionID'   => $dxEvolutionID,
+            'Diagnosis'       => json_encode($diagnosis),
+            'Confirmed'       => $confirmed
         ];
 
-        return $latestDiagnosis;
+        // Diagnosis is formatted as JSON and ensures that this is safe.
+        // If we use the safe wrapper, HTML encoding the quotation marks
+        // will make it invalid JSON.
+        $DB->unsafeInsertOnDuplicateUpdate(
+            'candidate_diagnosis_evolution',
+            $set
+        );   
     }
 
     /**

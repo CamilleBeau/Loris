@@ -129,6 +129,8 @@ class DiagnosisEvolution extends Component {
         return <Loader/>;
     }
 
+    console.log(this.state.formData);
+
     return (
       <div className='row'>
         <FormElement
