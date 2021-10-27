@@ -945,25 +945,45 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
 
     /**
      * Returns the candidate's latest diagnosis defined by
-     * the configured diagnosis trajectory.
+     * the configured diagnosis trajectory. Based on input, can return 
+     * the confirmed or unconfirmed latest diagnosis. A confirmed 
+     * diagnosis is one that has been pulled from a session that has 
+     * Approval = 'Pass'
      *
      * @param ProjectID|null $projectID ProjectID
+     * @param bool $isConfirmed Specifies whether to select latest 
+     *                          confirmed diagnosis or not.
      *
-     * @return array|null JSON of LatestDiagnosis
+     * @return array|null JSON of the candidate's latest diagnosis 
+     *                    as depicted by the configured diagnosis
+     *                    evolution ordering.
      */
-    function getLatestDiagnosis(ProjectID $projectID = null) : ?array
-    {
+    function getLatestDiagnosis(
+        ProjectID $projectID = null, 
+        bool $isConfirmed = false
+    ) : ?array {
         $DB           =& Database::singleton();
-        $whereProject = '';
-        if ($projectID != null) {
-            $whereProject = " AND ProjectID=$projectID";
-        }
+        
+        // Define where clauses
+        $whereProject = !is_null($projectID) ? 
+            " AND ProjectID=$projectID" : "";
+        $whereConfirmed = $isConfirmed ? 
+            " AND Confirmed='Y'" : "";
 
         $latestDx = $DB->pselect(
-            "SELECT LatestDiagnosis, DxEvolutionID, ProjectID, LastUpdate 
-            FROM candidate_latest_diagnosis
+            "SELECT 
+                Diagnosis,
+                cde.DxEvolutionID AS DxEvolutionID,
+                ProjectID,
+                Confirmed, 
+                LastUpdate, 
+                MAX(OrderNumber)
+            FROM candidate_diagnosis_evolution cde
+            JOIN diagnosis_evolution USING (DxEvolutionID)
             WHERE CandID=:candID"
-            . $whereProject,
+            . $whereProject
+            . $whereConfirmed
+            . " GROUP BY ProjectID, CandID, DxEvolutionID",
             ['candID' => $this->getCandID()]
         );
 
@@ -974,24 +994,16 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      * Returns the DxEvolutionID for which the latest diagnosis
      * of the specified project is based on.
      *
-     * @param ProjectID|null $projectID ProjectID
+     * @param ProjectID $projectID ProjectID
+     * @param bool $isConfirmed Specifies whether to select latest 
+     *                          confirmed diagnosis or not.
      *
      * @return string|null the DxEvolutionID that LatestDiagnosis is based on
      */
-    function getLatestDiagnosisSource(ProjectID $projectID)
+    function getLatestDiagnosisSource(ProjectID $projectID, bool $isConfirmed = false)
     {
-        $DB =& Database::singleton();
-        $latestDxEvolutionID = $DB->pselectOne(
-            "SELECT DxEvolutionID 
-            FROM candidate_latest_diagnosis
-            WHERE  ProjectID=:projID
-            AND CandID=:candID",
-            [
-                'projID' => $projectID,
-                'candID' => $this->getCandID()
-            ]
-        );
-        return $latestDxEvolutionID;
+        $latestDx = $this->getLatestDiagnosis($projectID, $isConfirmed);
+        return $latestDx['DxEvolutionID'];
     }
 
     /**

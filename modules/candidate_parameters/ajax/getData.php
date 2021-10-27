@@ -572,61 +572,24 @@ function getDiagnosisEvolutionFields(): array
         ['candID' => $candID]
     );
 
-    $diagnosisTrajectory = $db->pselect(
-        "SELECT * FROM diagnosis_evolution
-        ORDER BY orderNumber",
-        []
+    $candidateDiagnosisEvolution = $db->pselect(
+        "SELECT * FROM candidate_diagnosis_evolution
+        JOIN diagnosis_evolution USING (DxEvolutionID)
+        WHERE CandID=:candID",
+        ['candID' => $candID]
     );
 
-    $diagnosisEvolution = [];
-    foreach ($diagnosisTrajectory as $key => $data) {
-        $name        = $data['Name'];
-        $projectID   = $data['ProjectID'];
-        $project     = \Project::getProjectFromID(new \ProjectID($projectID));
-        $visit       = $data['visitLabel'];
-        $instrument  = $data['instrumentName'];
-        $sourceField = $data['sourceField'];
-        $orderNumber = $data['orderNumber'];
-
-        $diagnosisData = $db->pselectRow(
-            "SELECT $sourceField FROM $instrument i
-            JOIN flag f ON (i.CommentID=f.CommentID)
-            JOIN session s ON (f.SessionID=s.ID)
-            WHERE s.CandID=:candID 
-            AND i.CommentID NOT LIKE 'DDE%'
-            AND s.Visit_label=:visit
-            AND s.ProjectID=:projID
-            AND f.Test_name=:tn",
-            [
-                'candID' => $candID,
-                'visit'  => $visit,
-                'projID' => $projectID,
-                'tn'     => $instrument
-            ]
-        );
-
-        if (!is_null($diagnosisData)) {
-            $diagnosisEvolution[] = [
-                'name'       => $name,
-                'project'    => $project,
-                'visit'      => $visit,
-                'instrument' => $instrument,
-                'diagnosis'  => $diagnosisData
-            ];
-        }
-
-        $projects[$projectID] = $project;
-    }
-
+    $projects = \Utility::getProjectList();
     $latestDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis();
+    $latestConfirmedDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis(null, true);
 
     $result = [
-        'pscid'              => $pscid,
-        'candID'             => $candID,
-        'diagnosisEvolution' => $diagnosisEvolution,
-        'latestDiagnosis'    => $latestDiagnosis,
-        'projects'           => $projects
-
+        'pscid'                     => $pscid,
+        'candID'                    => $candID,
+        'diagnosisEvolution'        => $candidateDiagnosisEvolution,
+        'latestDiagnosis'           => $latestDiagnosis,
+        'latestConfirmedDiagnosis'  => $latestConfirmedDiagnosis,
+        'projects'                  => $projects
     ];
     return $result;
 }

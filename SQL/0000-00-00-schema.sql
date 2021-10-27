@@ -191,18 +191,17 @@ CREATE TABLE `candidate` (
   CONSTRAINT `FK_candidate_RegistrationProjectID` FOREIGN KEY (`RegistrationProjectID`) REFERENCES `Project` (`ProjectID`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `candidate_latest_diagnosis` (
+CREATE TABLE `candidate_diagnosis_evolution` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `CandID` int(6) NOT NULL,
-  `ProjectID` int(10) unsigned NOT NULL,
   `DxEvolutionID` int(10) unsigned NOT NULL,
-  `LatestDiagnosis` text DEFAULT NULL,
+  `Diagnosis` text DEFAULT NULL,
+  `Confirmed` enum('Y', 'N') DEFAULT NULL,
   `LastUpdate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`ID`),
-  UNIQUE KEY `latestProjDx` (`CandID`, `ProjectID`),
-  CONSTRAINT `FK_LatestDX_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`),
-  CONSTRAINT `FK_LatestDX_2` FOREIGN KEY (`ProjectID`) REFERENCES `Project` (`ProjectID`),
-  CONSTRAINT `FK_LatestDX_3` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
+  UNIQUE KEY `candidateDxEvolution` (`CandID`, `DxEvolutionID`),
+  CONSTRAINT `FK_candidateDxEvolution_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`),
+  CONSTRAINT `FK_FK_candidateDxEvolution_1_2` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `session` (
