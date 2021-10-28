@@ -65,52 +65,71 @@ class DiagnosisEvolution extends Component {
   }
 
   /**
-   *
    * @return {array}
    */
   formattedDiagnosisEvolution() {
     const dxEvolution = this.state.data.diagnosisEvolution;
     let formattedDxEvolution = [];
     dxEvolution.map((record) => {
-      const {name, project, visit, instrument, diagnosis} = record;
-      Object.entries(diagnosis).map((entry) => {
+      let formattedDiagnosis = [];
+      Object.entries(JSON.parse(record.Diagnosis)).map((entry) => {
         const [fieldName, dx] = entry;
-        formattedDxEvolution.push(
-          [
-            name,
-            project,
-            visit,
-            instrument,
-            fieldName,
-            dx,
-          ]
-        );
+        formattedDiagnosis.push(<p>{fieldName}: <strong>{dx}</strong></p>);
       });
+      const confirmed = record.Confirmed === 'Y' ?
+        <p style={{color: 'green', fontSize: '3rem', textAlign: 'center'}}>
+          &#10004;
+        </p> :
+        <p style={{color: 'red', fontSize: '3rem', textAlign: 'center'}}>
+          &#10007;
+        </p>;
+      formattedDxEvolution.push(
+        [
+          record.TrajectoryName,
+          record.Project,
+          record.visitLabel,
+          record.instrumentName,
+          record.sourceField,
+          formattedDiagnosis,
+          confirmed,
+          record.LastUpdate,
+        ]
+      );
     });
     return formattedDxEvolution;
   }
 
   /**
    * Render latest diagnosis element
+   * @param {*} latestDiagnosis
    * @return {JSX} - React markup for the component
    */
-  renderLatestDiagnosis() {
-    const latestDiagnosis = this.state.data.latestDiagnosis;
+  renderLatestDiagnosis(latestDiagnosis) {
     let element = [];
 
     latestDiagnosis.map((entry) => {
       const projectName = this.state.data.projects[entry.ProjectID];
-      const diagnosis = entry.LatestDiagnosis ?
-        Object.values(JSON.parse(entry.LatestDiagnosis)).join(', ') : '';
-      const updatedOn = entry.LastUpdate;
+      let diagnosis = [];
+      Object.entries(JSON.parse(entry.Diagnosis)).map((entry) => {
+        const [fieldName, dx] = entry;
+        diagnosis.push(
+          <StaticElement
+            key={fieldName}
+            label={fieldName}
+            text={dx}
+          />
+        );
+      });
 
       element.push(
-        <StaticElement
+        <FieldsetElement
           key={entry.DxEvolutionID}
-          label={projectName}
-          text={`${diagnosis} [Last Update: ${updatedOn}]`}
-        />
-      );
+          legend={<h4>{projectName} - {entry.Name}</h4>}
+          class='col-md-6'
+        >
+          {diagnosis}
+        </FieldsetElement>
+      )
     });
     return element;
   }
@@ -129,6 +148,22 @@ class DiagnosisEvolution extends Component {
         return <Loader/>;
     }
 
+    const latestDiagnosis = this.state.data.latestProjectDiagnosis.length > 0 ?
+      <div class='col-md-6'>
+        <h3>Latest Diagnosis</h3>
+        {this.renderLatestDiagnosis(this.state.data.latestProjectDiagnosis)}
+      </div>
+      : null;
+    
+    const latestConfirmedDiagnosis = this.state.data.latestConfirmedProjectDiagnosis.length > 0 ?
+    <div class='col-md-6'>
+      <h3>Latest Confirmed Diagnosis</h3>
+      {this.renderLatestDiagnosis(this.state.data.latestConfirmedProjectDiagnosis)}
+    </div>
+    : null;
+      
+      
+
     console.log(this.state.formData);
 
     return (
@@ -137,7 +172,7 @@ class DiagnosisEvolution extends Component {
           name='diagnosisEvolution'
           onSubmit={this.handleSubmit}
           ref='form'
-          class='col-md-8'
+          class='col-md-12'
         >
           <StaticElement
             label='PSCID'
@@ -147,9 +182,8 @@ class DiagnosisEvolution extends Component {
             label='DCCID'
             text={this.state.data.candID}
           />
-          <h3>Latest Diagnosis</h3>
-          {this.renderLatestDiagnosis()}
-          <br></br>
+          {latestDiagnosis}
+          {latestConfirmedDiagnosis}
           <h3>Diagnosis Evolution</h3>
           <StaticDataTable
             Headers={[
@@ -159,6 +193,8 @@ class DiagnosisEvolution extends Component {
               'Instrument',
               'Source Field',
               'Diagnosis',
+              'Confirmed',
+              'Last Update',
             ]}
             Data={this.formattedDiagnosisEvolution()}
             Hide={{rowsPerPage: true, downloadCSV: true}}

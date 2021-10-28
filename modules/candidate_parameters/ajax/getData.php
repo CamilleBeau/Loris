@@ -573,23 +573,34 @@ function getDiagnosisEvolutionFields(): array
     );
 
     $candidateDiagnosisEvolution = $db->pselect(
-        "SELECT * FROM candidate_diagnosis_evolution
-        JOIN diagnosis_evolution USING (DxEvolutionID)
+        "SELECT 
+            de.Name AS TrajectoryName,
+            p.Name AS Project,
+            visitLabel, 
+            instrumentName,
+            sourceField,
+            Diagnosis,
+            Confirmed,
+            LastUpdate
+        FROM candidate_diagnosis_evolution
+        JOIN diagnosis_evolution de USING (DxEvolutionID)
+        JOIN Project p USING (ProjectID)
         WHERE CandID=:candID",
         ['candID' => $candID]
     );
 
     $projects = \Utility::getProjectList();
+    // TODO: Latest Diagnosis need to take in an array of projects
     $latestDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis();
     $latestConfirmedDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis(null, true);
 
     $result = [
-        'pscid'                     => $pscid,
-        'candID'                    => $candID,
-        'diagnosisEvolution'        => $candidateDiagnosisEvolution,
-        'latestDiagnosis'           => $latestDiagnosis,
-        'latestConfirmedDiagnosis'  => $latestConfirmedDiagnosis,
-        'projects'                  => $projects
+        'pscid'                             => $pscid,
+        'candID'                            => $candID,
+        'diagnosisEvolution'                => $candidateDiagnosisEvolution,
+        'latestProjectDiagnosis'            => $latestDiagnosis,
+        'latestConfirmedProjectDiagnosis'   => $latestConfirmedDiagnosis,
+        'projects'                          => $projects
     ];
     return $result;
 }

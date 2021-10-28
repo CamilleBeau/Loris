@@ -187,6 +187,26 @@ class Diagnosis extends \NDB_Page
             );
         }
 
+        // Validation: Order Number should be unique for specified project
+        $DB = \Database::singleton();
+        $match = $DB->pselectOne(
+            "SELECT Name
+            FROM diagnosis_evolution
+            WHERE ProjectID=:projID
+            AND orderNumber=:ord",
+            [
+                'projID' => $projectID,
+                'ord'    => $orderNumber
+            ]
+        );
+        if (!is_null($match)) {
+            return new \LORIS\Http\Response\JSON\Conflict(
+                "Order Number not unique for this Project! 
+                Already used in Trajectory: $match."
+            );
+        }
+
+
         $set = [
             "Name"           => $name,
             "ProjectID"      => $projectID,
