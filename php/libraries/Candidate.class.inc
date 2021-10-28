@@ -968,7 +968,7 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         $whereConfirmed = $isConfirmed ? 
             " AND Confirmed='Y'" : "";
 
-        $latestDx = $DB->pselect(
+        $latestDx = $DB->pselectRow(
             "SELECT DxEvolutionID,
                 ProjectID,
                 CandID,
@@ -980,15 +980,22 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
             JOIN candidate_diagnosis_evolution USING (DxEvolutionID)
             WHERE OrderNumber IN (
                 SELECT MAX(orderNumber) AS OrderNumber 
-                FROM diagnosis_evolution de2 GROUP BY ProjectID
-                )
+                FROM diagnosis_evolution de2
+                JOIN candidate_diagnosis_evolution cde USING (DxEvolutionID)
+                WHERE CandID=:candID
+                AND ProjectID=:projID"
+                . $whereConfirmed .
+            " )
             AND CandID=:candID
-            AND ProjectID=$projectID"
+            AND ProjectID=:projID"
             . $whereConfirmed,
-            ['candID' => $this->getCandID()]
+            [
+                'candID' => $this->getCandID(),
+                'projID' => $projectID
+            ]
         );
 
-        return $latestDx;
+        return $latestDx ?? null;
     }
 
     /**

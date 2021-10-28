@@ -590,9 +590,28 @@ function getDiagnosisEvolutionFields(): array
     );
 
     $projects = \Utility::getProjectList();
-    // TODO: Latest Diagnosis need to take in an array of projects
-    $latestDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis();
-    $latestConfirmedDiagnosis = \Candidate::singleton($candID)->getLatestDiagnosis(null, true);
+
+    // Get all candidate's project affiliations
+    $candProj = $db->pselectCol(
+        "SELECT DISTINCT ProjectID 
+        FROM session
+        WHERE CandID=:candID",
+        ['candID' => $candID]
+    );
+
+    $candidate = \Candidate::singleton($candID);
+    $latestDiagnosis = [];
+    $latestConfirmedDiagnosis = [];
+    foreach ($candProj as $key => $projectID) {
+        $latestDiagnosis[] = 
+            $candidate->getLatestDiagnosis(new \ProjectID($projectID), false);
+        $latestConfirmedDiagnosis[] = 
+            $candidate->getLatestDiagnosis(new \ProjectID($projectID), true);
+    }
+
+    // remove null results and re-index
+    $latestDiagnosis = array_values(array_filter($latestDiagnosis));
+    $latestConfirmedDiagnosis = array_values(array_filter($latestConfirmedDiagnosis));
 
     $result = [
         'pscid'                             => $pscid,
