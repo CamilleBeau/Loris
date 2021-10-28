@@ -988,7 +988,7 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      * diagnosis is one that has been pulled from a session that has 
      * Approval = 'Pass'
      *
-     * @param ProjectID|null $projectID ProjectID
+     * @param ProjectID $projectID ProjectID
      * @param bool $isConfirmed Specifies whether to select latest 
      *                          confirmed diagnosis or not.
      *
@@ -997,31 +997,32 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      *                    evolution ordering.
      */
     function getLatestDiagnosis(
-        ProjectID $projectID = null, 
+        ProjectID $projectID, 
         bool $isConfirmed = false
     ) : ?array {
         $DB           =& Database::singleton();
         
         // Define where clauses
-        $whereProject = !is_null($projectID) ? 
-            " AND ProjectID=$projectID" : "";
         $whereConfirmed = $isConfirmed ? 
             " AND Confirmed='Y'" : "";
 
         $latestDx = $DB->pselect(
-            "SELECT 
-                Diagnosis,
-                cde.DxEvolutionID AS DxEvolutionID,
+            "SELECT DxEvolutionID,
                 ProjectID,
-                Confirmed, 
-                LastUpdate, 
-                MAX(OrderNumber)
-            FROM candidate_diagnosis_evolution cde
-            JOIN diagnosis_evolution USING (DxEvolutionID)
-            WHERE CandID=:candID"
-            . $whereProject
-            . $whereConfirmed
-            . " GROUP BY ProjectID, CandID, DxEvolutionID",
+                CandID,
+                Name,
+                Diagnosis,
+                Confirmed,
+                LastUpdate
+            FROM diagnosis_evolution 
+            JOIN candidate_diagnosis_evolution USING (DxEvolutionID)
+            WHERE OrderNumber IN (
+                SELECT MAX(orderNumber) AS OrderNumber 
+                FROM diagnosis_evolution de2 GROUP BY ProjectID
+                )
+            AND CandID=:candID
+            AND ProjectID=$projectID"
+            . $whereConfirmed,
             ['candID' => $this->getCandID()]
         );
 
