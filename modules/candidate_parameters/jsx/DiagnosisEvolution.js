@@ -124,12 +124,12 @@ class DiagnosisEvolution extends Component {
       element.push(
         <FieldsetElement
           key={entry.DxEvolutionID}
-          legend={<h4>{projectName} - {entry.Name}</h4>}
+          legend={<h5>{projectName} - {entry.Name}</h5>}
           class='col-md-6'
         >
           {diagnosis}
         </FieldsetElement>
-      )
+      );
     });
     return element;
   }
@@ -147,24 +147,29 @@ class DiagnosisEvolution extends Component {
     if (!this.state.isLoaded) {
         return <Loader/>;
     }
+    console.log(this.state.formData);
 
     const latestDiagnosis = this.state.data.latestProjectDiagnosis.length > 0 ?
-      <div class='col-md-6'>
+      <div className='col-md-10'>
         <h3>Latest Diagnosis</h3>
+        <p>This diagnosis is <strong style={{color: 'red'}}>unconfirmed</strong>.
+          A confirmed diagnosis is one that belongs to an approved visit.
+        </p>
         {this.renderLatestDiagnosis(this.state.data.latestProjectDiagnosis)}
       </div>
       : null;
-    
-    const latestConfirmedDiagnosis = this.state.data.latestConfirmedProjectDiagnosis.length > 0 ?
-    <div class='col-md-6'>
-      <h3>Latest Confirmed Diagnosis</h3>
-      {this.renderLatestDiagnosis(this.state.data.latestConfirmedProjectDiagnosis)}
-    </div>
-    : null;
-      
-      
-
-    console.log(this.state.formData);
+    const latestConfirmedDiagnosis =
+      this.state.data.latestConfirmedProjectDiagnosis.length > 0 ?
+        <div className='col-md-10'>
+          <h3>Latest Confirmed Diagnosis</h3>
+          <p>This diagnosis is <strong  style={{ color: 'green' }}>confirmed</strong>.
+            A confirmed diagnosis is one that belongs to an approved visit.
+          </p>
+          {this.renderLatestDiagnosis(
+            this.state.data.latestConfirmedProjectDiagnosis
+          )}
+        </div>
+        : null;
 
     return (
       <div className='row'>
