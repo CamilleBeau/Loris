@@ -581,7 +581,8 @@ function getDiagnosisEvolutionFields(): array
             sourceField,
             Diagnosis,
             Confirmed,
-            LastUpdate
+            LastUpdate,
+            OrderNumber
         FROM candidate_diagnosis_evolution
         JOIN diagnosis_evolution de USING (DxEvolutionID)
         JOIN Project p USING (ProjectID)
