@@ -1013,7 +1013,8 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
                 Name,
                 Diagnosis,
                 Confirmed,
-                LastUpdate
+                LastUpdate,
+                OrderNumber
             FROM diagnosis_evolution 
             JOIN candidate_diagnosis_evolution USING (DxEvolutionID)
             WHERE OrderNumber IN (

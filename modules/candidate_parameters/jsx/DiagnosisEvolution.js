@@ -87,6 +87,7 @@ class DiagnosisEvolution extends Component {
         [
           record.TrajectoryName,
           record.Project,
+          record.OrderNumber,
           record.visitLabel,
           record.instrumentName,
           record.sourceField,
@@ -152,7 +153,8 @@ class DiagnosisEvolution extends Component {
     const latestDiagnosis = this.state.data.latestProjectDiagnosis.length > 0 ?
       <div className='col-md-10'>
         <h3>Latest Diagnosis</h3>
-        <p>This diagnosis is <strong style={{color: 'red'}}>unconfirmed</strong>.
+        <p>This diagnosis is <strong style={{color: 'red'}}>
+          unconfirmed</strong>.
           A confirmed diagnosis is one that belongs to an approved visit.
         </p>
         {this.renderLatestDiagnosis(this.state.data.latestProjectDiagnosis)}
@@ -162,7 +164,8 @@ class DiagnosisEvolution extends Component {
       this.state.data.latestConfirmedProjectDiagnosis.length > 0 ?
         <div className='col-md-10'>
           <h3>Latest Confirmed Diagnosis</h3>
-          <p>This diagnosis is <strong  style={{ color: 'green' }}>confirmed</strong>.
+          <p>This diagnosis is <strong style={{color: 'green'}}>
+            confirmed</strong>.
             A confirmed diagnosis is one that belongs to an approved visit.
           </p>
           {this.renderLatestDiagnosis(
@@ -194,6 +197,7 @@ class DiagnosisEvolution extends Component {
             Headers={[
               'Trajectory Name',
               'Project',
+              'Configuration Order',
               'Visit',
               'Instrument',
               'Source Field',
