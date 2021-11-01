@@ -292,24 +292,32 @@ class CouchDBDemographicsImporter
         $projects = \Utility::getProjectList();
         foreach ($projects as $projectID => $project) {
             $projectName = str_replace(' ', '_', $project);
-            $tempTbl     = "latestDx_". $projectName;
+            $latestProjDx     = "latestDiagnosis_$projectName";
 
-            $diagnosisFields = ", 
-                $tempTbl.LatestDiagnosis AS latestDiagnosis_$projectName";
-            $fieldsInQuery  .= $diagnosisFields;
+            $fieldsInQuery .= ", 
+                $latestProjDx.Diagnosis AS $latestProjDx";
             $tablesToJoin   .= "
-                            LEFT JOIN candidate_latest_diagnosis $tempTbl
-                            ON ($tempTbl.CandID=c.CandID)
-                            AND $tempTbl.ProjectID=$projectID";
-            $groupBy        .= ", 
-                $tempTbl.LatestDiagnosis";
-
+                LEFT JOIN (
+                    SELECT cde.CandID, Diagnosis 
+                    FROM candidate_diagnosis_evolution cde
+                    JOIN diagnosis_evolution de USING (DxEvolutionID)
+                    JOIN (
+                        SELECT cde2.CandID, MAX(OrderNumber) AS OrderNumber 
+                        FROM diagnosis_evolution de2
+                        JOIN candidate_diagnosis_evolution cde2 USING (DxEvolutionID)
+                        WHERE de2.ProjectID=$projectID
+                        GROUP BY CandID
+                        ) AS maxOrderNumber ON (maxOrderNumber.CandID=cde.CandID AND maxOrderNumber.OrderNumber=de.OrderNumber)
+                    WHERE ProjectID=$projectID
+                ) AS $latestProjDx ON ($latestProjDx.CandID=c.CandID)";
+            $groupBy       .= ", $latestProjDx.Diagnosis";
         }
 
         $whereClause = " WHERE s.Active='Y' AND c.Active='Y' "
                        ."AND c.Entity_type != 'Scanner'";
 
         $concatQuery = $fieldsInQuery . $tablesToJoin . $whereClause . $groupBy;
+        print_r($concatQuery);
         return $concatQuery;
     }
 
