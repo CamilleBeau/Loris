@@ -2272,12 +2272,12 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      * Determines whether this instrument is part of a configured
      * diagnosis trajectory.
      *
-     * @return string|null The DxEvolutionID of this instrument's configured 
+     * @return string|null The DxEvolutionID of this instrument's configured
      *                      diagnosis trajectory.
      */
     function getConfiguredDiagnosisTrajectory()
     {
-        $DB =& Database::singleton();
+        $DB        =& Database::singleton();
         $timepoint = \TimePoint::singleton($this->getSessionID());
 
         // Check if there is a diagnosis trajectory defined
@@ -2303,11 +2303,12 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      *
      * @param string $dxEvolutionID The ID of configured Diagnsosis Trajectory
      *                              for this instrument & session.
+     *
      * @return void
      */
     function updateCandidateDiagnosisEvolution(string $dxEvolutionID) : void
     {
-        $DB =& Database::singleton();
+        $DB        =& Database::singleton();
         $timepoint = \TimePoint::singleton($this->getSessionID());
 
         // Get the fields that correspond to a configured diagnosis
@@ -2335,10 +2336,10 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         $confirmed = $timepoint->getApprovalStatus() === 'Pass' ? 'Y' : 'N';
 
         $set = [
-            'CandID'          => $this->getCandID(),
-            'DxEvolutionID'   => $dxEvolutionID,
-            'Diagnosis'       => json_encode($diagnosis),
-            'Confirmed'       => $confirmed
+            'CandID'        => $this->getCandID(),
+            'DxEvolutionID' => $dxEvolutionID,
+            'Diagnosis'     => json_encode($diagnosis),
+            'Confirmed'     => $confirmed
         ];
 
         // Diagnosis is formatted as JSON and ensures that this is safe.
@@ -2347,7 +2348,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         $DB->unsafeInsertOnDuplicateUpdate(
             'candidate_diagnosis_evolution',
             $set
-        );   
+        );
     }
 
     /**

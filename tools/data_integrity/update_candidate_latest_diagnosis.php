@@ -89,8 +89,8 @@ foreach ($candIDs as $k => $candID) {
                 $instrumentData = $instrument->getInstanceData();
 
 
-                $diagnosis = [];
-                $sourceFields    = explode(",", $data['sourceField']);
+                $diagnosis    = [];
+                $sourceFields = explode(",", $data['sourceField']);
                 foreach ($sourceFields as $k => $fieldName) {
                     // None of the diagnosis components should be empty
                     if (!isset($instrumentData[$fieldName])) {
@@ -99,16 +99,23 @@ foreach ($candIDs as $k => $candID) {
                     $diagnosis[$fieldName] = $instrumentData[$fieldName];
                 }
 
-                $confirmed = \TimePoint::singleton(new SessionID($sessionID))->getApprovalStatus() === 'Pass' ? 'Y' : 'N';
+                $confirmed = \TimePoint::singleton(
+                    new SessionID($sessionID)
+                )->getApprovalStatus() === 'Pass' ?
+                    'Y' : 'N'
+                ;
 
                 $set = [
-                    'CandID'          => $candID,
-                    'DxEvolutionID'   => $data['DxEvolutionID'],
-                    'Diagnosis'       => json_encode($diagnosis),
-                    'Confirmed'       => $confirmed
+                    'CandID'        => $candID,
+                    'DxEvolutionID' => $data['DxEvolutionID'],
+                    'Diagnosis'     => json_encode($diagnosis),
+                    'Confirmed'     => $confirmed
                 ];
 
-                print_r("\nUpdating Diagnosis Evolution: " . $data['Name'] . " for CandID: $candID\n");
+                print_r(
+                    "\nUpdating Diagnosis Evolution: " .
+                    $data['Name'] . " for CandID: $candID\n"
+                );
                 print_r("\t" . json_encode($diagnosis) . "\n");
 
                 $DB->unsafeInsertOnDuplicateUpdate(

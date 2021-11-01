@@ -87,11 +87,13 @@ the diagnosis trajectory configuration page.
   [Manual Test]
 4. Validate that you cannot create duplicate trajectory names.
   [Manual Test]
-5. Test editing a currently existing trajectory. Test resetting the form as well with 
+5. Validate that you cannot duplicate an order number within the same project.
+  [Manual Test]
+6. Test editing a currently existing trajectory. Test resetting the form as well with 
 the reset button.
   [Manual Test]
-5. Test the breadcrumb to see if you can navigate back to the main config page.
+7. Test the breadcrumb to see if you can navigate back to the main config page.
   [Automation Test]
-6. Go back to the diagnosis trajectory configuration page and click on the subproject and project link and 
+8. Go back to the diagnosis trajectory configuration page and click on the subproject and project link and 
 confirm that they bring you to the correct configuration pages.
   [Manual Test]
