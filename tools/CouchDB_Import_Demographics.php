@@ -291,12 +291,12 @@ class CouchDBDemographicsImporter
         // Latest Diagnosis by project
         $projects = \Utility::getProjectList();
         foreach ($projects as $projectID => $project) {
-            $projectName = str_replace(' ', '_', $project);
-            $latestProjDx     = "latestDiagnosis_$projectName";
+            $projectName  = str_replace(' ', '_', $project);
+            $latestProjDx = "latestDiagnosis_$projectName";
 
             $fieldsInQuery .= ", 
                 $latestProjDx.Diagnosis AS $latestProjDx";
-            $tablesToJoin   .= "
+            $tablesToJoin  .= "
                 LEFT JOIN (
                     SELECT cde.CandID, Diagnosis 
                     FROM candidate_diagnosis_evolution cde
@@ -307,7 +307,8 @@ class CouchDBDemographicsImporter
                         JOIN candidate_diagnosis_evolution cde2 USING (DxEvolutionID)
                         WHERE de2.ProjectID=$projectID
                         GROUP BY CandID
-                        ) AS maxOrderNumber ON (maxOrderNumber.CandID=cde.CandID AND maxOrderNumber.OrderNumber=de.OrderNumber)
+                        ) AS maxOrderNumber ON (maxOrderNumber.CandID=cde.CandID 
+                            AND maxOrderNumber.OrderNumber=de.OrderNumber)
                     WHERE ProjectID=$projectID
                 ) AS $latestProjDx ON ($latestProjDx.CandID=c.CandID)";
             $groupBy       .= ", $latestProjDx.Diagnosis";

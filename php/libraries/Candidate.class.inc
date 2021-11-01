@@ -945,27 +945,26 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
 
     /**
      * Returns the candidate's latest diagnosis defined by
-     * the configured diagnosis trajectory. Based on input, can return 
-     * the confirmed or unconfirmed latest diagnosis. A confirmed 
-     * diagnosis is one that has been pulled from a session that has 
+     * the configured diagnosis trajectory. Based on input, can return
+     * the confirmed or unconfirmed latest diagnosis. A confirmed
+     * diagnosis is one that has been pulled from a session that has
      * Approval = 'Pass'
      *
-     * @param ProjectID $projectID ProjectID
-     * @param bool $isConfirmed Specifies whether to select latest 
-     *                          confirmed diagnosis or not.
+     * @param ProjectID $projectID   ProjectID
+     * @param bool      $isConfirmed Specifies whether to select latest
      *
-     * @return array|null JSON of the candidate's latest diagnosis 
+     * @return array|null JSON of the candidate's latest diagnosis
      *                    as depicted by the configured diagnosis
      *                    evolution ordering.
      */
     function getLatestDiagnosis(
-        ProjectID $projectID, 
+        ProjectID $projectID,
         bool $isConfirmed = false
     ) : ?array {
-        $DB           =& Database::singleton();
-        
+        $DB =& Database::singleton();
+
         // Define where clauses
-        $whereConfirmed = $isConfirmed ? 
+        $whereConfirmed = $isConfirmed ?
             " AND Confirmed='Y'" : "";
 
         $latestDx = $DB->pselectRow(
@@ -1003,14 +1002,15 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
      * Returns the DxEvolutionID for which the latest diagnosis
      * of the specified project is based on.
      *
-     * @param ProjectID $projectID ProjectID
-     * @param bool $isConfirmed Specifies whether to select latest 
-     *                          confirmed diagnosis or not.
+     * @param ProjectID $projectID   ProjectID
+     * @param bool      $isConfirmed Specifies whether to select latest
      *
      * @return string|null the DxEvolutionID that LatestDiagnosis is based on
      */
-    function getLatestDiagnosisSource(ProjectID $projectID, bool $isConfirmed = false)
-    {
+    function getLatestDiagnosisSource(
+        ProjectID $projectID,
+        bool $isConfirmed = false
+    ) {
         $latestDx = $this->getLatestDiagnosis($projectID, $isConfirmed);
         return $latestDx['DxEvolutionID'];
     }

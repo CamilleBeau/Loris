@@ -600,27 +600,33 @@ function getDiagnosisEvolutionFields(): array
         ['candID' => $candID]
     );
 
-    $candidate = \Candidate::singleton($candID);
+    $candidate       = \Candidate::singleton($candID);
     $latestDiagnosis = [];
     $latestConfirmedDiagnosis = [];
     foreach ($candProj as $key => $projectID) {
-        $latestDiagnosis[] = 
-            $candidate->getLatestDiagnosis(new \ProjectID($projectID), false);
-        $latestConfirmedDiagnosis[] = 
-            $candidate->getLatestDiagnosis(new \ProjectID($projectID), true);
+        $latestDiagnosis[]          = $candidate->getLatestDiagnosis(
+            new \ProjectID($projectID),
+            false
+        );
+        $latestConfirmedDiagnosis[] = $candidate->getLatestDiagnosis(
+            new \ProjectID($projectID),
+            true
+        );
     }
 
     // remove null results and re-index
-    $latestDiagnosis = array_values(array_filter($latestDiagnosis));
-    $latestConfirmedDiagnosis = array_values(array_filter($latestConfirmedDiagnosis));
+    $latestDiagnosis          = array_values(array_filter($latestDiagnosis));
+    $latestConfirmedDiagnosis = array_values(
+        array_filter($latestConfirmedDiagnosis)
+    );
 
     $result = [
-        'pscid'                             => $pscid,
-        'candID'                            => $candID,
-        'diagnosisEvolution'                => $candidateDiagnosisEvolution,
-        'latestProjectDiagnosis'            => $latestDiagnosis,
-        'latestConfirmedProjectDiagnosis'   => $latestConfirmedDiagnosis,
-        'projects'                          => $projects
+        'pscid'                           => $pscid,
+        'candID'                          => $candID,
+        'diagnosisEvolution'              => $candidateDiagnosisEvolution,
+        'latestProjectDiagnosis'          => $latestDiagnosis,
+        'latestConfirmedProjectDiagnosis' => $latestConfirmedDiagnosis,
+        'projects'                        => $projects
     ];
     return $result;
 }

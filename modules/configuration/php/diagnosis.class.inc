@@ -188,7 +188,7 @@ class Diagnosis extends \NDB_Page
         }
 
         // Validation: Order Number should be unique for specified project
-        $DB = \Database::singleton();
+        $DB    = \Database::singleton();
         $match = $DB->pselectOne(
             "SELECT Name
             FROM diagnosis_evolution
@@ -205,7 +205,6 @@ class Diagnosis extends \NDB_Page
                 Already used in Trajectory: $match."
             );
         }
-
 
         $set = [
             "Name"           => $name,
