@@ -142,6 +142,10 @@ class Instrument_List_ControlPanel extends \TimePoint
             // move to next stage (approval or the bin)
             if ($currentStatus == 'Pass') {
                 $nextStage = 'Approval';
+                // update candidate_diagnosis_evolution
+                \Utility::updateDiagnosisConfirmationStatus(
+                    $this->getSessionID()
+                );
             } else {
                 $nextStage = 'Recycling Bin';
             }
