@@ -197,7 +197,7 @@ class DiagnosisEvolution extends Component {
             Headers={[
               'Trajectory Name',
               'Project',
-              'Configuration Order',
+              'Configured Order',
               'Visit',
               'Instrument',
               'Source Field',

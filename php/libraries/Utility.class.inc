@@ -1020,4 +1020,34 @@ class Utility
         }
         return $formData;
     }
+
+    /**
+     * Update the candidate_diagnosis_evolution diagnosis confirmation statues
+     *
+     * @param SessionID $sessionID The sessionID that has been approved
+     *
+     * @return void
+     */
+    static function updateDiagnosisConfirmationStatus(SessionID $sessionID) : void
+    {
+        $factory = \NDB_Factory::singleton();
+        $DB      = $factory->database();
+
+        $dxToUpdate = $DB->pselectCol(
+            "SELECT cde.ID 
+            FROM candidate_diagnosis_evolution cde 
+            JOIN diagnosis_evolution de USING (DxEvolutionID)
+            JOIN session s ON (cde.CandID=s.CandID AND s.Visit_label=de.visitLabel)
+            WHERE s.ID=:sid",
+            ['sid' => $sessionID]
+        );
+
+        foreach ($dxToUpdate as $key => $ID) {
+            $DB->update(
+                'candidate_diagnosis_evolution',
+                ['Confirmed' => 'Y'],
+                ['ID' => $ID]
+            );
+        }
+    }
 }
