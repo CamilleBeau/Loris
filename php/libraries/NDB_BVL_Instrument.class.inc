@@ -2241,7 +2241,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      */
     function propagateData()
     {
-        if (strpos($this->getCommentID(), "DDE") !== false) {
+        if (strpos($this->getCommentID(), "DDE") === false) {
             $this->propagateLatestDiagnosisData();
         }
     }
