@@ -1,7 +1,7 @@
 <?php
 /**
  * This script updates each candidate's latest diagnosis based on the
- * confidured diagnosis evolution trajectory.
+ * configured diagnosis evolution trajectory.
  *
  * PHP Version 7
  *
@@ -92,36 +92,37 @@ foreach ($candIDs as $k => $candID) {
                 $diagnosis    = [];
                 $sourceFields = explode(",", $data['sourceField']);
                 foreach ($sourceFields as $k => $fieldName) {
-                    // None of the diagnosis components should be empty
                     if (!isset($instrumentData[$fieldName])) {
-                        continue 2;
+                        continue;
                     }
                     $diagnosis[$fieldName] = $instrumentData[$fieldName];
                 }
 
-                $confirmed = \TimePoint::singleton(
-                    new SessionID($sessionID)
-                )->getApprovalStatus() === 'Pass' ?
-                    'Y' : 'N'
-                ;
+                if (!empty($diagnosis)) {
+                    $confirmed = \TimePoint::singleton(
+                        new SessionID($sessionID)
+                    )->getApprovalStatus() === 'Pass' ?
+                        'Y' : 'N'
+                    ;
 
-                $set = [
-                    'CandID'        => $candID,
-                    'DxEvolutionID' => $data['DxEvolutionID'],
-                    'Diagnosis'     => json_encode($diagnosis),
-                    'Confirmed'     => $confirmed
-                ];
+                    $set = [
+                        'CandID'        => $candID,
+                        'DxEvolutionID' => $data['DxEvolutionID'],
+                        'Diagnosis'     => json_encode($diagnosis),
+                        'Confirmed'     => $confirmed
+                    ];
 
-                print_r(
-                    "\nUpdating Diagnosis Evolution: " .
-                    $data['Name'] . " for CandID: $candID\n"
-                );
-                print_r("\t" . json_encode($diagnosis) . "\n");
+                    print_r(
+                        "\nUpdating Diagnosis Evolution: " .
+                        $data['Name'] . " for CandID: $candID\n"
+                    );
+                    print_r("\t" . json_encode($diagnosis) . "\n");
 
-                $DB->unsafeInsertOnDuplicateUpdate(
-                    'candidate_diagnosis_evolution',
-                    $set
-                );
+                    $DB->unsafeInsertOnDuplicateUpdate(
+                        'candidate_diagnosis_evolution',
+                        $set
+                    );
+                }
             }
         }
     }

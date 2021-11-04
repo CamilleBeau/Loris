@@ -1022,16 +1022,20 @@ class Utility
     }
 
     /**
-     * Update the candidate_diagnosis_evolution diagnosis confirmation statues
+     * Update the candidate_diagnosis_evolution diagnosis confirmation status
      *
-     * @param SessionID $sessionID The sessionID that has been approved
+     * @param SessionID $sessionID  The sessionID that has been approved
+     * @param bool      $isApproved Specifies if session approval is set to pass
      *
      * @return void
      */
-    static function updateDiagnosisConfirmationStatus(SessionID $sessionID) : void
-    {
+    static function updateDiagnosisConfirmationStatus(
+        SessionID $sessionID,
+        bool $isApproved
+    ) : void {
         $factory = \NDB_Factory::singleton();
         $DB      = $factory->database();
+        $status  = $isApproved ? 'Y' : 'N';
 
         $dxToUpdate = $DB->pselectCol(
             "SELECT cde.ID 
@@ -1045,7 +1049,7 @@ class Utility
         foreach ($dxToUpdate as $key => $ID) {
             $DB->update(
                 'candidate_diagnosis_evolution',
-                ['Confirmed' => 'Y'],
+                ['Confirmed' => $status],
                 ['ID' => $ID]
             );
         }

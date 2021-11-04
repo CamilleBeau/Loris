@@ -21,5 +21,5 @@ CREATE TABLE `candidate_diagnosis_evolution` (
   PRIMARY KEY (`ID`),
   UNIQUE KEY `candidateDxEvolution` (`CandID`, `DxEvolutionID`),
   CONSTRAINT `FK_candidateDxEvolution_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`),
-  CONSTRAINT `FK_FK_candidateDxEvolution_1_2` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
+  CONSTRAINT `FK_candidateDxEvolution_2` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
