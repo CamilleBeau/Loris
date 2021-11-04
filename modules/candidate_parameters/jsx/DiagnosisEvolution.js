@@ -76,6 +76,10 @@ class DiagnosisEvolution extends Component {
         const [fieldName, dx] = entry;
         formattedDiagnosis.push(<p>{fieldName}: <strong>{dx}</strong></p>);
       });
+      let sourceFields = [];
+      record.sourceField.split(',').map((field) => {
+        sourceFields.push(<p>{field}</p>);
+      });
       const confirmed = record.Confirmed === 'Y' ?
         <p style={{color: 'green', fontSize: '3rem', textAlign: 'center'}}>
           &#10004;
@@ -90,7 +94,7 @@ class DiagnosisEvolution extends Component {
           record.OrderNumber,
           record.visitLabel,
           record.instrumentName,
-          record.sourceField,
+          sourceFields,
           formattedDiagnosis,
           confirmed,
           record.LastUpdate,
@@ -148,7 +152,6 @@ class DiagnosisEvolution extends Component {
     if (!this.state.isLoaded) {
         return <Loader/>;
     }
-    console.log(this.state.formData);
 
     const latestDiagnosis = this.state.data.latestProjectDiagnosis.length > 0 ?
       <div className='col-md-10'>
@@ -200,7 +203,7 @@ class DiagnosisEvolution extends Component {
               'Configured Order',
               'Visit',
               'Instrument',
-              'Source Field',
+              'Source Field(s)',
               'Diagnosis',
               'Confirmed',
               'Last Update',
