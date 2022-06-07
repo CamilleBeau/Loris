@@ -583,7 +583,7 @@ function getDiagnosisEvolutionFields(): array
             Confirmed,
             LastUpdate,
             OrderNumber
-        FROM candidate_diagnosis_evolution
+        FROM candidate_diagnosis_evolution_rel
         JOIN diagnosis_evolution de USING (DxEvolutionID)
         JOIN Project p USING (ProjectID)
         WHERE CandID=:candID",

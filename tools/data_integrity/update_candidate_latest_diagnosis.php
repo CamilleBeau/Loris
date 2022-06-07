@@ -101,7 +101,7 @@ foreach ($candIDs as $k => $candID) {
                 if (!empty($diagnosis)) {
                     $confirmed = \TimePoint::singleton(
                         new SessionID($sessionID)
-                    )->getApprovalStatus() === 'Pass' ?
+                    )->getVisitStatus() === 'Pass' ?
                         'Y' : 'N'
                     ;
 
@@ -119,7 +119,7 @@ foreach ($candIDs as $k => $candID) {
                     print_r("\t" . json_encode($diagnosis) . "\n");
 
                     $DB->unsafeInsertOnDuplicateUpdate(
-                        'candidate_diagnosis_evolution',
+                        'candidate_diagnosis_evolution_rel',
                         $set
                     );
                 }

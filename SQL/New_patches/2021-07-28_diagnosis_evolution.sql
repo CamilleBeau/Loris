@@ -11,14 +11,13 @@ CREATE TABLE `diagnosis_evolution` (
   CONSTRAINT `FK_DxEvolution_1` FOREIGN KEY (`ProjectID`) REFERENCES `Project` (`ProjectID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `candidate_diagnosis_evolution` (
-  `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
+CREATE TABLE `candidate_diagnosis_evolution_rel` (
   `CandID` int(6) NOT NULL,
   `DxEvolutionID` int(10) unsigned NOT NULL,
   `Diagnosis` text DEFAULT NULL,
   `Confirmed` enum('Y', 'N') DEFAULT NULL,
   `LastUpdate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`ID`),
+  PRIMARY KEY (`CandID`, `DxEvolutionID`),
   UNIQUE KEY `candidateDxEvolution` (`CandID`, `DxEvolutionID`),
   CONSTRAINT `FK_candidateDxEvolution_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`),
   CONSTRAINT `FK_candidateDxEvolution_2` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)

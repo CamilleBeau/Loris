@@ -299,12 +299,13 @@ class CouchDBDemographicsImporter
             $tablesToJoin  .= "
                 LEFT JOIN (
                     SELECT cde.CandID, Diagnosis 
-                    FROM candidate_diagnosis_evolution cde
+                    FROM candidate_diagnosis_evolution_rel cde
                     JOIN diagnosis_evolution de USING (DxEvolutionID)
                     JOIN (
                         SELECT cde2.CandID, MAX(OrderNumber) AS OrderNumber 
                         FROM diagnosis_evolution de2
-                        JOIN candidate_diagnosis_evolution cde2 USING (DxEvolutionID)
+                        JOIN candidate_diagnosis_evolution_rel cde2 
+                        USING (DxEvolutionID)
                         WHERE de2.ProjectID=$projectID
                         GROUP BY CandID
                         ) AS maxOrderNumber ON (maxOrderNumber.CandID=cde.CandID 

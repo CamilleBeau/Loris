@@ -148,7 +148,7 @@ class Instrument_List_ControlPanel extends \TimePoint
                 $isPassed  = false;
             }
             $this->startStage($nextStage);
-            // update candidate_diagnosis_evolution
+            // update candidate_diagnosis_evolution_rel
             \Utility::updateDiagnosisConfirmationStatus(
                 $this->getSessionID(),
                 $isPassed
@@ -216,7 +216,7 @@ class Instrument_List_ControlPanel extends \TimePoint
                     ]
                 );
 
-                // update candidate_diagnosis_evolution
+                // update candidate_diagnosis_evolution_rel
                 \Utility::updateDiagnosisConfirmationStatus(
                     $this->getSessionID(),
                     false
