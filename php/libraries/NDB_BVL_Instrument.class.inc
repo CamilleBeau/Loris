@@ -2256,7 +2256,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      */
     function propagateLatestDiagnosisData()
     {
-        $DB =& Database::singleton();
+        $DB = $this->loris->getDatabaseConnection();
 
         // if the instrument is not part of a configured Dx Tracjectory; return
         $dxEvolutionID = $this->getConfiguredDiagnosisTrajectory();
@@ -2277,7 +2277,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      */
     function getConfiguredDiagnosisTrajectory()
     {
-        $DB        =& Database::singleton();
+        $DB        = $this->loris->getDatabaseConnection();
         $timepoint = \TimePoint::singleton($this->getSessionID());
 
         // Check if there is a diagnosis trajectory defined
@@ -2308,7 +2308,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      */
     function updateCandidateDiagnosisEvolution(string $dxEvolutionID) : void
     {
-        $DB        =& Database::singleton();
+        $DB        = $this->loris->getDatabaseConnection();
         $timepoint = \TimePoint::singleton($this->getSessionID());
 
         // Get the fields that correspond to a configured diagnosis
@@ -2450,7 +2450,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      */
     function getCandID() : ?string
     {
-        $db        = \Database::singleton();
+        $db        = $this->loris->getDatabaseConnection();
         $CommentID = $this->getCommentID();
 
         $candID = $db->pselectOne(

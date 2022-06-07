@@ -90,7 +90,7 @@ class Diagnosis extends \NDB_Page
      */
     function initializeSetup() : array
     {
-        $DB = \Database::singleton();
+        $DB = \NDB_Factory::singleton()->database();
 
         $projects    = \Utility::getProjectList();
         $visits      = \Utility::getVisitList();
@@ -188,7 +188,7 @@ class Diagnosis extends \NDB_Page
         }
 
         // Validation: Order Number should be unique for specified project
-        $DB    = \Database::singleton();
+        $DB    = \NDB_Factory::singleton()->database();
         $match = $DB->pselectOne(
             "SELECT Name
             FROM diagnosis_evolution
@@ -230,7 +230,7 @@ class Diagnosis extends \NDB_Page
         string $dxEvolutionID,
         array $set
     ) : ResponseInterface {
-        $DB = \Database::singleton();
+        $DB = \NDB_Factory::singleton()->database();
 
         // Create or update a Diagnosis Trajectory
         if ($dxEvolutionID == 'new') {

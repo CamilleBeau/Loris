@@ -564,7 +564,7 @@ function getDODFields(): array
 function getDiagnosisEvolutionFields(): array
 {
     $candID = new CandID($_GET['candID']);
-    $db     = \Database::singleton();
+    $db     = \NDB_Factory::singleton()->database();
 
     $pscid = $db->pselectOne(
         "SELECT PSCID FROM candidate
