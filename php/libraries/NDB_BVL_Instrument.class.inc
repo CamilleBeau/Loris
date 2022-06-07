@@ -2256,8 +2256,6 @@ abstract class NDB_BVL_Instrument extends NDB_Page
      */
     function propagateLatestDiagnosisData()
     {
-        $DB = $this->loris->getDatabaseConnection();
-
         // if the instrument is not part of a configured Dx Tracjectory; return
         $dxEvolutionID = $this->getConfiguredDiagnosisTrajectory();
         if (is_null($dxEvolutionID)) {
