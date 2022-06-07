@@ -144,16 +144,15 @@ CREATE TABLE `caveat_options` (
 CREATE TABLE `diagnosis_evolution` (
   `DxEvolutionID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `Name` varchar(255) DEFAULT NULL,
-  `ProjectID` int(10) unsigned DEFAULT NULL,
+  `ProjectID` int(10) unsigned NOT NULL,
   `visitLabel` varchar(255) DEFAULT NULL,
   `instrumentName` varchar(255) DEFAULT NULL,
   `sourceField` varchar(255) DEFAULT NULL,
   `orderNumber` int(10) unsigned DEFAULT NULL,
-  PRIMARY KEY (`DxEvolutionID`),
-  UNIQUE KEY `TrajectoryName` (`Name`),
-  CONSTRAINT `FK_DxEvolution_1` FOREIGN KEY (`ProjectID`) REFERENCES `Project` (`ProjectID`)
+  CONSTRAINT `PK_diagnosis_evolution` PRIMARY KEY (`DxEvolutionID`),
+  CONSTRAINT `UK_diagnosis_evolution_Name` UNIQUE KEY `Name` (`Name`),
+  CONSTRAINT `FK_diagnosis_evolution_ProjectID` FOREIGN KEY (`ProjectID`) REFERENCES `Project` (`ProjectID`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 CREATE TABLE `candidate` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `CandID` int(6) NOT NULL DEFAULT '0',
@@ -196,11 +195,10 @@ CREATE TABLE `candidate_diagnosis_evolution_rel` (
   `DxEvolutionID` int(10) unsigned NOT NULL,
   `Diagnosis` text DEFAULT NULL,
   `Confirmed` enum('Y', 'N') DEFAULT NULL,
-  `LastUpdate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`CandID`, `DxEvolutionID`),
-  UNIQUE KEY `candidateDxEvolution` (`CandID`, `DxEvolutionID`),
-  CONSTRAINT `FK_candidateDxEvolution_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`),
-  CONSTRAINT `FK_FK_candidateDxEvolution_1_2` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`)
+  `LastUpdate` datetime NOT NULL DEFAULT NOW() ON UPDATE NOW(),
+  CONSTRAINT `PK_candidate_diagnosis_evolution_rel` PRIMARY KEY (`CandidateID`, `DiagnosisEvolutionID`),
+  CONSTRAINT `FK_candidate_diagnosis_evolution_rel_CandID` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `FK_candidate_diagnosis_evolution_rel_DxEvolutionID` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `session` (
