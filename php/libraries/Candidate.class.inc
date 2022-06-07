@@ -1015,11 +1015,11 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
                 LastUpdate,
                 OrderNumber
             FROM diagnosis_evolution 
-            JOIN candidate_diagnosis_evolution USING (DxEvolutionID)
+            JOIN candidate_diagnosis_evolution_rel USING (DxEvolutionID)
             WHERE OrderNumber IN (
                 SELECT MAX(orderNumber) AS OrderNumber 
                 FROM diagnosis_evolution de2
-                JOIN candidate_diagnosis_evolution cde USING (DxEvolutionID)
+                JOIN candidate_diagnosis_evolution_rel cde USING (DxEvolutionID)
                 WHERE CandID=:candID
                 AND ProjectID=:projID"
                 . $whereConfirmed .

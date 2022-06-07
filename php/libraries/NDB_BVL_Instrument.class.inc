@@ -2333,7 +2333,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             $diagnosis[$fieldName] = $instrumentData[$fieldName];
         }
 
-        $confirmed = $timepoint->getApprovalStatus() === 'Pass' ? 'Y' : 'N';
+        $confirmed = $timepoint->getVisitStatus() === 'Pass' ? 'Y' : 'N';
 
         $set = [
             'CandID'        => $this->getCandID(),
@@ -2346,7 +2346,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         // If we use the safe wrapper, HTML encoding the quotation marks
         // will make it invalid JSON.
         $DB->unsafeInsertOnDuplicateUpdate(
-            'candidate_diagnosis_evolution',
+            'candidate_diagnosis_evolution_rel',
             $set
         );
     }

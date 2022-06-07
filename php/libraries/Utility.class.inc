@@ -1022,7 +1022,7 @@ class Utility
     }
 
     /**
-     * Update the candidate_diagnosis_evolution diagnosis confirmation status
+     * Update the candidate_diagnosis_evolution_rel diagnosis confirmation status
      *
      * @param SessionID $sessionID  The sessionID that has been approved
      * @param bool      $isApproved Specifies if session approval is set to pass
@@ -1037,20 +1037,23 @@ class Utility
         $DB      = $factory->database();
         $status  = $isApproved ? 'Y' : 'N';
 
-        $dxToUpdate = $DB->pselectCol(
-            "SELECT cde.ID 
-            FROM candidate_diagnosis_evolution cde 
+        $dxToUpdate = $DB->pselectRow(
+            "SELECT cde.CandID, cde.DxEvolutionID
+            FROM candidate_diagnosis_evolution_rel cde 
             JOIN diagnosis_evolution de USING (DxEvolutionID)
             JOIN session s ON (cde.CandID=s.CandID AND s.Visit_label=de.visitLabel)
             WHERE s.ID=:sid",
             ['sid' => $sessionID]
         );
 
-        foreach ($dxToUpdate as $key => $ID) {
+        foreach ($dxToUpdate as $key => $row) {
             $DB->update(
-                'candidate_diagnosis_evolution',
+                'candidate_diagnosis_evolution_rel',
                 ['Confirmed' => $status],
-                ['ID' => $ID]
+                [
+                    'CandID'        => $row['CandID'],
+                    'DxEvolutionID' => $row['DxEvolutionID']
+                ]
             );
         }
     }
