@@ -55,11 +55,9 @@ class Diagnosis extends \NDB_Page
         // Ensure GET or POST request.
         switch ($request->getMethod()) {
         case 'GET':
-            return $this->_handleGET($request);
-            break;
+            return $this->_handleGET();
         case 'POST':
             return $this->_handlePOST($request);
-            break;
         default:
             return new \LORIS\Http\Response\JSON\MethodNotAllowed(
                 $this->allowedMethods()
@@ -75,7 +73,7 @@ class Diagnosis extends \NDB_Page
      *
      * @return ResponseInterface The outgoing PSR7 response
      */
-    private function _handleGET(ServerRequestInterface $request) : ResponseInterface
+    private function _handleGET() : ResponseInterface
     {
         $response = $this->initializeSetup();
         return new \LORIS\Http\Response\JsonResponse(
@@ -103,6 +101,7 @@ class Diagnosis extends \NDB_Page
             []
         );
 
+        $sourceFields = [];
         foreach ($parameterType as $key => $record) {
             $sourceFields[$record['SourceField']] = $record['SourceField'];
         }
@@ -271,9 +270,6 @@ class Diagnosis extends \NDB_Page
             );
             return new \LORIS\Http\Response\JSON\OK();
         }
-        return new \LORIS\Http\Response\JSON\BadRequest(
-            'Error'
-        );
     }
 
     /**

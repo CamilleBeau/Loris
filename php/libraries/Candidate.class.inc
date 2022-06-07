@@ -1050,7 +1050,7 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         bool $isConfirmed = false
     ) {
         $latestDx = $this->getLatestDiagnosis($projectID, $isConfirmed);
-        return $latestDx['DxEvolutionID'];
+        return $latestDx['DxEvolutionID'] ?? null;
     }
 
     /**
