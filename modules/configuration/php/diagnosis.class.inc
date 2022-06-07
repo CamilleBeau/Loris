@@ -69,8 +69,6 @@ class Diagnosis extends \NDB_Page
     /**
      * Initialize setup of the login module.
      *
-     * @param ServerRequestInterface $request The incoming PSR7 request.
-     *
      * @return ResponseInterface The outgoing PSR7 response
      */
     private function _handleGET() : ResponseInterface
