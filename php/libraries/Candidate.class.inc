@@ -999,7 +999,7 @@ class Candidate implements \LORIS\StudyEntities\AccessibleResource,
         ProjectID $projectID,
         bool $isConfirmed = false
     ) : ?array {
-        $DB =& Database::singleton();
+        $DB = \NDB_Factory::singleton()->database();
 
         // Define where clauses
         $whereConfirmed = $isConfirmed ?
