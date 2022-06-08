@@ -603,7 +603,7 @@ function getDiagnosisEvolutionFields(): array
     $candidate       = \Candidate::singleton($candID);
     $latestDiagnosis = [];
     $latestConfirmedDiagnosis = [];
-    foreach ($candProj as $key => $projectID) {
+    foreach ($candProj as $projectID) {
         $latestDiagnosis[]          = $candidate->getLatestDiagnosis(
             new \ProjectID($projectID),
             false
