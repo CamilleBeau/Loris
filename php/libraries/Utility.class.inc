@@ -1046,7 +1046,7 @@ class Utility
             ['sid' => $sessionID]
         );
 
-        foreach ($dxToUpdate as $key => $row) {
+        foreach ($dxToUpdate as $row) {
             $DB->update(
                 'candidate_diagnosis_evolution_rel',
                 ['Confirmed' => $status],
