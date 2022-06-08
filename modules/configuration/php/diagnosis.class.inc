@@ -100,7 +100,7 @@ class Diagnosis extends \NDB_Page
         );
 
         $sourceFields = [];
-        foreach ($parameterType as $key => $record) {
+        foreach ($parameterType as $record) {
             $sourceFields[$record['SourceField']] = $record['SourceField'];
         }
 
