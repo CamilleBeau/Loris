@@ -2322,7 +2322,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         $sourceFields       = explode(",", $sourceFields);
 
         $diagnosis = [];
-        foreach ($sourceFields as $k => $fieldName) {
+        foreach ($sourceFields as $fieldName) {
             // None of the diagnosis components should be empty
             // If so, the latest diagnosis should not be updated.
             if (is_null($instrumentData[$fieldName])) {
