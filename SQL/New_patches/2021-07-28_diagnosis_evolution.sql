@@ -17,7 +17,7 @@ CREATE TABLE `candidate_diagnosis_evolution_rel` (
   `Diagnosis` text DEFAULT NULL,
   `Confirmed` enum('Y', 'N') DEFAULT NULL,
   `LastUpdate` datetime NOT NULL DEFAULT NOW() ON UPDATE NOW(),
-  CONSTRAINT `PK_candidate_diagnosis_evolution_rel` PRIMARY KEY (`CandidateID`, `DiagnosisEvolutionID`),
+  CONSTRAINT `PK_candidate_diagnosis_evolution_rel` PRIMARY KEY (`CandID`, `DxEvolutionID`),
   CONSTRAINT `FK_candidate_diagnosis_evolution_rel_CandID` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `FK_candidate_diagnosis_evolution_rel_DxEvolutionID` FOREIGN KEY (`DxEvolutionID`) REFERENCES `diagnosis_evolution` (`DxEvolutionID`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
