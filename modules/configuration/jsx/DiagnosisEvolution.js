@@ -233,13 +233,6 @@ class DiagnosisEvolution extends Component {
                     Use this page to manage the configuration of the study's
                     diagnosis trajectory.
                 </p>
-                <p>
-                    To configure study subprojects
-                    <a href="{$baseurl}/configuration/subproject/"> click here
-                    </a>.
-                    To configure study projects
-                    <a href="{$baseurl}/configuration/project/"> click here</a>.
-                </p>
                 <VerticalTabs
                     tabs={tabList}
                     defaultTab='new'
