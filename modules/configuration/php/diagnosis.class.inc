@@ -190,10 +190,12 @@ class Diagnosis extends \NDB_Page
             "SELECT Name
             FROM diagnosis_evolution
             WHERE ProjectID=:projID
-            AND orderNumber=:ord",
+            AND orderNumber=:ord
+            AND NOT FIND_IN_SET(DxEvolutionID, :dxEvoID)",
             [
                 'projID' => $projectID,
-                'ord'    => $orderNumber
+                'ord'    => $orderNumber,
+                'dxEvoID' => $dxEvolutionID
             ]
         );
         if (!is_null($match)) {
