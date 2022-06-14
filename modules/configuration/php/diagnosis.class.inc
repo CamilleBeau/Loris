@@ -193,8 +193,8 @@ class Diagnosis extends \NDB_Page
             AND orderNumber=:ord
             AND NOT FIND_IN_SET(DxEvolutionID, :dxEvoID)",
             [
-                'projID' => $projectID,
-                'ord'    => $orderNumber,
+                'projID'  => $projectID,
+                'ord'     => $orderNumber,
                 'dxEvoID' => $dxEvolutionID
             ]
         );
