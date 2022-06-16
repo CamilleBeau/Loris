@@ -2325,28 +2325,30 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         foreach ($sourceFields as $fieldName) {
             // None of the diagnosis components should be empty
             // If so, the latest diagnosis should not be updated.
-            if (is_null($instrumentData[$fieldName])) {
-                return;
+            if (!isset($instrumentData[$fieldName]) || (isset($instrumentData[$fieldName]) && is_null($instrumentData[$fieldName]))) {
+                continue;
             }
             $diagnosis[$fieldName] = $instrumentData[$fieldName];
         }
 
-        $confirmed = $timepoint->getVisitStatus() === 'Pass' ? 'Y' : 'N';
+        if (!empty($diagnosis)) {
+            $confirmed = $timepoint->getVisitStatus() === 'Pass' ? 'Y' : 'N';
 
-        $set = [
-            'CandID'        => $this->getCandID(),
-            'DxEvolutionID' => $dxEvolutionID,
-            'Diagnosis'     => json_encode($diagnosis),
-            'Confirmed'     => $confirmed
-        ];
+            $set = [
+                'CandID'        => $this->getCandID(),
+                'DxEvolutionID' => $dxEvolutionID,
+                'Diagnosis'     => json_encode($diagnosis),
+                'Confirmed'     => $confirmed
+            ];
 
-        // Diagnosis is formatted as JSON and ensures that this is safe.
-        // If we use the safe wrapper, HTML encoding the quotation marks
-        // will make it invalid JSON.
-        $DB->unsafeInsertOnDuplicateUpdate(
-            'candidate_diagnosis_evolution_rel',
-            $set
-        );
+            // Diagnosis is formatted as JSON and ensures that this is safe.
+            // If we use the safe wrapper, HTML encoding the quotation marks
+            // will make it invalid JSON.
+            $DB->unsafeInsertOnDuplicateUpdate(
+                'candidate_diagnosis_evolution_rel',
+                $set
+            );
+        }
     }
 
     /**
