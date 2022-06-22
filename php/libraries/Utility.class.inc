@@ -1037,7 +1037,7 @@ class Utility
         $DB      = $factory->database();
         $status  = $isApproved ? 'Y' : 'N';
 
-        $dxToUpdate = $DB->pselectRow(
+        $dxToUpdate = $DB->pselect(
             "SELECT cde.CandID, cde.DxEvolutionID
             FROM candidate_diagnosis_evolution_rel cde 
             JOIN diagnosis_evolution de USING (DxEvolutionID)
