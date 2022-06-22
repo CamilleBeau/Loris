@@ -153,14 +153,40 @@ class DiagnosisEvolution extends Component {
         return <Loader/>;
     }
 
-    const latestDiagnosis = this.state.data.latestProjectDiagnosis.length > 0 ?
+    const latestConfirmedProjectDiagnosisIDs =
+      this.state.data.latestConfirmedProjectDiagnosis.length > 0 ?
+      this.state.data.latestConfirmedProjectDiagnosis.map((item) => {
+      return item.DxEvolutionID;
+    }) : null;
+
+    const latestProjectDiagnosisIDs =
+      this.state.data.latestProjectDiagnosis.length > 0 ?
+      this.state.data.latestProjectDiagnosis.map((item) => {
+      return item.DxEvolutionID;
+    }) : null;
+
+    // Unset diagnosis in latest project diagnosis list if it also exists
+    // in the confirmed latest project diagnosis list
+    let latestProjectDiagnosis = this.state.data.latestProjectDiagnosis;
+    if (latestConfirmedProjectDiagnosisIDs != null) {
+      latestProjectDiagnosisIDs.map((dxEvolutionID, index) => {
+        if (latestConfirmedProjectDiagnosisIDs.find(
+            (element) => (element === dxEvolutionID)
+          ) != undefined
+        ) {
+          latestProjectDiagnosis.splice(index, 1);
+        }
+      });
+    }
+
+    const latestDiagnosis = latestProjectDiagnosis.length > 0 ?
       <div className='col-md-10'>
         <h3>Latest Diagnosis</h3>
         <p>This diagnosis is <strong style={{color: 'red'}}>
           unconfirmed</strong>.
           A confirmed diagnosis is one that belongs to an approved visit.
         </p>
-        {this.renderLatestDiagnosis(this.state.data.latestProjectDiagnosis)}
+        {this.renderLatestDiagnosis(latestProjectDiagnosis)}
       </div>
       : null;
     const latestConfirmedDiagnosis =
