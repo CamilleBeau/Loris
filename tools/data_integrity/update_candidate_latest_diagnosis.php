@@ -88,11 +88,13 @@ foreach ($candIDs as $k => $candID) {
                 );
                 $instrumentData = $instrument->getInstanceData();
 
-
                 $diagnosis    = [];
                 $sourceFields = explode(",", $data['sourceField']);
                 foreach ($sourceFields as $k => $fieldName) {
-                    if (!isset($instrumentData[$fieldName]) || (isset($instrumentData[$fieldName] && is_null($instrumentData[$fieldName]))) {
+                    if (!isset($instrumentData[$fieldName])
+                        || (isset($instrumentData[$fieldName])
+                        && is_null($instrumentData[$fieldName]))
+                    ) {
                         continue;
                     }
                     $diagnosis[$fieldName] = $instrumentData[$fieldName];
