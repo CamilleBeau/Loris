@@ -2325,10 +2325,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
         foreach ($sourceFields as $fieldName) {
             // None of the diagnosis components should be empty
             // If so, the latest diagnosis should not be updated.
-            if (!isset($instrumentData[$fieldName])
-                || (isset($instrumentData[$fieldName])
-                && is_null($instrumentData[$fieldName]))
-            ) {
+            if (!isset($instrumentData[$fieldName])) {
                 continue;
             }
             $diagnosis[$fieldName] = $instrumentData[$fieldName];
