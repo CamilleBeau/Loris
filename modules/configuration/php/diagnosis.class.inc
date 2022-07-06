@@ -141,7 +141,8 @@ class Diagnosis extends \NDB_Page
         $projectID      = $values['ProjectID'] ?? null;
         $visit          = $values['visitLabel'] ?? null;
         $instrumentName = $values['instrumentName'] ?? null;
-        $sourceFields   = explode(',', $values['sourceField']) ?? [];
+        $sourceFields   = isset($values['sourceField']) ?
+            explode(',', $values['sourceField']) : [];
         $orderNumber    = $values['orderNumber'] ?? null;
 
         /**
