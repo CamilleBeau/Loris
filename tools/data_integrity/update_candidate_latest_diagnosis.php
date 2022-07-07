@@ -98,11 +98,16 @@ foreach ($candIDs as $k => $candID) {
                 }
 
                 if (!empty($diagnosis)) {
-                    $confirmed = \TimePoint::singleton(
+                    $timepoint = \TimePoint::singleton(
                         new SessionID($sessionID)
-                    )->getVisitStatus() === 'Pass' ?
-                        'Y' : 'N'
-                    ;
+                    );
+                    // Check for Visit Status 'Pass' and
+                    // Approval Status at least 'In Progress'
+                    // to check that Send To DCC already occurred
+                    $confirmed = (
+                        $timepoint->getVisitStatus() === 'Pass'
+                        && $timepoint->getApprovalStatus() !== null
+                    ) ? 'Y' : 'N';
 
                     $set = [
                         'CandID'        => $candID,
