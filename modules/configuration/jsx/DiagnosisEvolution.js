@@ -57,10 +57,11 @@ class DiagnosisEvolution extends Component {
         return fetch(this.props.dataURL, {credentials: 'same-origin'})
             .then((resp) => resp.json())
             .then((data) => this.setState({
-                formData: {
+                data: data,
+                formData: JSON.parse(JSON.stringify({
                     ...this.state.formData,
                     ...data,
-                },
+                })),
             }))
             .catch((error) => {
                 this.setState({error: true});
@@ -217,7 +218,7 @@ class DiagnosisEvolution extends Component {
         tabList.push({id: 'new', label: 'New Diagnosis Trajectory'});
 
         let diagnosisTracks = [];
-        const trajectories = this.state.formData.diagnosisTracks;
+        const trajectories = this.state.data.diagnosisTracks;
         if (trajectories) {
             Object.values(trajectories).map((trajectory) => {
                 const dxID = trajectory.DxEvolutionID;
@@ -294,16 +295,20 @@ class DiagnosisEvolution extends Component {
     handleReset(e) {
         e.preventDefault();
         const tabID = this.state.currentTab;
-        const index = tabID == 'new' ?
-            'new' : 'diagnosisTracks[tabID]';
-        let formData = this.state.formData[index];
-        for (let key in formData) {
-            if (key !== 'DxEvolutionID') {
-                formData[key] = null;
-            }
+        let formData = this.state.formData;
+        if (tabID === 'new') {
+          let formDataNew = formData[tabID];
+          for (let key in formDataNew) {
+              if (key !== 'DxEvolutionID') {
+                  formDataNew[key] = null;
+              }
+          }
+          formData[tabID] = formDataNew;
+        } else {
+          formData.diagnosisTracks[tabID]
+            = this.state.data.diagnosisTracks[tabID];
         }
-
-        this.setState({[index]: formData});
+        this.setState({formData});
     }
 
     /**
