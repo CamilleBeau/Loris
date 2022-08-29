@@ -94,6 +94,3 @@ the reset button.
   [Manual Test]
 7. Test the breadcrumb to see if you can navigate back to the main config page.
   [Automation Test]
-8. Go back to the diagnosis trajectory configuration page and click on the subproject and project link and 
-confirm that they bring you to the correct configuration pages.
-  [Manual Test]

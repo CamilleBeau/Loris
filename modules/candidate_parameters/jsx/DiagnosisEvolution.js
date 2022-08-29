@@ -16,13 +16,11 @@ class DiagnosisEvolution extends Component {
 
     this.state = {
       data: {},
-      formData: {},
       error: false,
       isLoaded: false,
     };
 
     this.fetchData = this.fetchData.bind(this);
-    this.setFormData = this.setFormData.bind(this);
     this.formattedDiagnosisEvolution =
     this.formattedDiagnosisEvolution.bind(this);
     this.renderLatestDiagnosis =
@@ -44,24 +42,11 @@ class DiagnosisEvolution extends Component {
   fetchData() {
     return fetch(this.props.dataURL, {credentials: 'same-origin'})
       .then((resp) => resp.json())
-      .then((data) => this.setState({data: data, formData: data}))
+      .then((data) => this.setState({data: data}))
       .catch((error) => {
         this.setState({error: true});
         console.error(error);
       });
-  }
-
-  /**
-   * Set form data
-   * @param {string} formElement
-   * @param {*} value
-   */
-  setFormData(formElement, value) {
-    let formData = this.state.formData;
-    formData[formElement] = value;
-    this.setState({
-      formData: formData,
-    });
   }
 
   /**
