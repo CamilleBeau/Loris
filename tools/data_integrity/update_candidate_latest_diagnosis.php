@@ -50,10 +50,20 @@ $loris = new \LORIS\LorisInstance(
 );
 
 foreach ($candIDs as $k => $candID) {
-    $candidate       = \Candidate::singleton(new CandID($candID));
-    $candidateVisits = $candidate->getListOfVisitLabels();
+    $candidate         = \Candidate::singleton(new CandID($candID));
+    $candidateVisits   = $candidate->getListOfVisitLabels();
+    $candidateProjects = \NDB_Factory::singleton()->database()->pselectCol(
+        "SELECT DISTINCT ProjectID
+        FROM session
+        WHERE CandID=:candID",
+        ['candID' => $candID]
+    );
 
     foreach ($diagnosisTrajectoryByProject as $projectID => $projectTrajectories) {
+        // Only save configured diagnosis evolution for candidate's projects
+        if (!in_array($projectID, $candidateProjects)) {
+            continue;
+        }
         foreach ($projectTrajectories as $key => $data) {
             // search if candidate has a matching visit
             $sessionID = array_search(
