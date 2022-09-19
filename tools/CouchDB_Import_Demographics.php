@@ -291,8 +291,8 @@ class CouchDBDemographicsImporter
         // Latest Diagnosis by project
         $projects = \Utility::getProjectList();
         foreach ($projects as $projectID => $project) {
-            $projectName  = str_replace(' ', '_', $project);
-            $latestProjDx = "latestDiagnosis_$projectName";
+            $projectAlias = \Project::getProjectFromID($projectID)->getAlias();
+            $latestProjDx = "latestDiagnosis_$projectAlias";
 
             $fieldsInQuery .= ", 
                 $latestProjDx.Diagnosis AS $latestProjDx";
