@@ -158,7 +158,14 @@ class Diagnosis extends \NDB_Page
         }
 
         // Validation: Visit is part of Project's config
-        $projectVisits = \Utility::getVisitList(new \ProjectID($projectID));
+        $projectVisits = $DB->pselectCol(
+            "SELECT DISTINCT Visit_label FROM test_battery tb
+            JOIN project_subproject_rel psr ON (psr.SubprojectID=tb.SubprojectID)
+            WHERE psr.ProjectID=:projID
+            ORDER BY Visit_label",
+            ['projID' => $projectID]
+        );
+	```
         if (!array_key_exists($visit, $projectVisits)) {
             return new \LORIS\Http\Response\JSON\Conflict(
                 'Visit is not defined for selected Project.'
