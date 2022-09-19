@@ -173,8 +173,14 @@ class Diagnosis extends \NDB_Page
         }
 
         // Validation: Instrument is part of Visit's test battery
-        $visitInstruments = \Utility::getVisitInstruments($visit);
-        if (!array_key_exists($instrumentName, $visitInstruments)) {
+        $visitInstruments = $DB->pselectCol(
+            "SELECT DISTINCT test_name FROM test_battery
+            WHERE Visit_label=:visit
+            ORDER BY test_name",
+            ['visit' => $visit]
+        );
+
+        if (!in_array($instrumentName, $visitInstruments)) {
             return new \LORIS\Http\Response\JSON\Conflict(
                 'Instrument does not exist in selected visit.'
             );
