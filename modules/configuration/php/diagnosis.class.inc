@@ -236,10 +236,10 @@ class Diagnosis extends \NDB_Page
         if ($dxEvolutionID == 'new') {
             // Validation: Name does not already exist
             $dxNames = $DB->pselectCol(
-                "SELECT Name FROM diagnosis_evolution",
+                "SELECT LOWER(Name) FROM diagnosis_evolution",
                 []
             );
-            if (in_array($set['Name'], $dxNames)) {
+            if (in_array(strtolower($set['Name']), $dxNames)) {
                 return new \LORIS\Http\Response\JSON\Conflict(
                     'Trajectory Name already exists.'
                 );
@@ -253,11 +253,11 @@ class Diagnosis extends \NDB_Page
         } else {
             // Validation: Name does not already exist
             $dxNames = $DB->pselectCol(
-                "SELECT Name FROM diagnosis_evolution
+                "SELECT LOWER(Name) FROM diagnosis_evolution
                 WHERE DxEvolutionID NOT IN ($dxEvolutionID)",
                 []
             );
-            if (in_array($set['Name'], $dxNames)) {
+            if (in_array(strtolower($set['Name']), $dxNames)) {
                 return new \LORIS\Http\Response\JSON\Conflict(
                     'Trajectory Name already exists.'
                 );
