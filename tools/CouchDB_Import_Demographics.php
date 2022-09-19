@@ -387,7 +387,7 @@ class CouchDBDemographicsImporter
         $projects = \Utility::getProjectList();
         foreach ($projects as $projectID => $project) {
             $projectAlias = \Project::getProjectFromID($projectID)->getAlias();
-            $fieldName   = "latestDiagnosis_" . $projectAlias;
+            $fieldName    = "latestDiagnosis_" . $projectAlias;
 
             $this->Dictionary[$fieldName] = [
                 'Description' => "Latest Diagnosis for $project",

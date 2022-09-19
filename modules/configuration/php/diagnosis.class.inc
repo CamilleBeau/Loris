@@ -165,7 +165,6 @@ class Diagnosis extends \NDB_Page
             ORDER BY Visit_label",
             ['projID' => $projectID]
         );
-	```
         if (!array_key_exists($visit, $projectVisits)) {
             return new \LORIS\Http\Response\JSON\Conflict(
                 'Visit is not defined for selected Project.'
