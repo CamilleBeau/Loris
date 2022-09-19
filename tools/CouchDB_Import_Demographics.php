@@ -291,8 +291,8 @@ class CouchDBDemographicsImporter
         // Latest Diagnosis by project
         $projects = \Utility::getProjectList();
         foreach ($projects as $projectID => $project) {
-            $projectName  = str_replace(' ', '_', $project);
-            $latestProjDx = "latestDiagnosis_$projectName";
+            $projectAlias = \Project::getProjectFromID($projectID)->getAlias();
+            $latestProjDx = "latestDiagnosis_$projectAlias";
 
             $fieldsInQuery .= ", 
                 $latestProjDx.Diagnosis AS $latestProjDx";
@@ -386,8 +386,8 @@ class CouchDBDemographicsImporter
         // Update data dictionary for latest diagnosis by project
         $projects = \Utility::getProjectList();
         foreach ($projects as $projectID => $project) {
-            $projectName = str_replace(' ', '_', $project);
-            $fieldName   = "latestDiagnosis_" . $projectName;
+            $projectAlias = \Project::getProjectFromID($projectID)->getAlias();
+            $fieldName   = "latestDiagnosis_" . $projectAlias;
 
             $this->Dictionary[$fieldName] = [
                 'Description' => "Latest Diagnosis for $project",
