@@ -134,6 +134,7 @@ class Diagnosis extends \NDB_Page
      */
     private function _handlePOST(ServerRequestInterface $request) : ResponseInterface
     {
+        $DB     = \NDB_Factory::singleton()->database();
         $values = $request->getParsedBody();
 
         $dxEvolutionID  = $values['DxEvolutionID'] ?? null;
