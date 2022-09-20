@@ -199,7 +199,6 @@ class Diagnosis extends \NDB_Page
         }
 
         // Validation: Order Number should be unique for specified project
-        $DB    = \NDB_Factory::singleton()->database();
         $match = $DB->pselectOne(
             "SELECT Name
             FROM diagnosis_evolution
