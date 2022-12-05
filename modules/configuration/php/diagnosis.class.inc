@@ -70,7 +70,7 @@ class Diagnosis extends \NDB_Page
                     $this->allowedMethods()
                 );
             }
-        default:
+            default:
             return new \LORIS\Http\Response\JSON\MethodNotAllowed(
                 $this->allowedMethods()
             );
@@ -144,7 +144,8 @@ class Diagnosis extends \NDB_Page
      *
      * @return ResponseInterface The outgoing PSR7 response
      */
-    private function _handleModify(ServerRequestInterface $request) : ResponseInterface
+    private function _handleModify(ServerRequestInterface $request)
+        : ResponseInterface
     {
         $DB     = \NDB_Factory::singleton()->database();
         $values = $request->getParsedBody();
@@ -250,14 +251,18 @@ class Diagnosis extends \NDB_Page
      *
      * @return ResponseInterface The outgoing PSR7 response
      */
-    private function _handleDelete(ServerRequestInterface $request) : ResponseInterface
+    private function _handleDelete(ServerRequestInterface $request)
+        : ResponseInterface
     {
         $DB     = \NDB_Factory::singleton()->database();
         $values = $request->getParsedBody();
 
-        $dxEvolutionID  = $values['DxEvolutionID'] ?? null;
+        $dxEvolutionID = $values['DxEvolutionID'] ?? null;
 
-        $DB->delete('candidate_diagnosis_evolution_rel', ['DxEvolutionID' => $dxEvolutionID]);
+        $DB->delete(
+            'candidate_diagnosis_evolution_rel',
+            ['DxEvolutionID' => $dxEvolutionID]
+        );
         $DB->delete('diagnosis_evolution', ['DxEvolutionID' => $dxEvolutionID]);
 
         return new \LORIS\Http\Response\JSON\OK();
