@@ -57,7 +57,19 @@ class Diagnosis extends \NDB_Page
         case 'GET':
             return $this->_handleGET();
         case 'POST':
-            return $this->_handlePOST($request);
+            $action = $request->getParsedBody()['action'];
+            switch ($action) {
+            case 'modify':
+                return $this->_handleModify($request);
+                break;
+            case 'delete':
+                return $this->_handleDelete($request);
+                break;
+            default:
+                return new \LORIS\Http\Response\JSON\MethodNotAllowed(
+                    $this->allowedMethods()
+                );
+            }
         default:
             return new \LORIS\Http\Response\JSON\MethodNotAllowed(
                 $this->allowedMethods()
@@ -132,7 +144,7 @@ class Diagnosis extends \NDB_Page
      *
      * @return ResponseInterface The outgoing PSR7 response
      */
-    private function _handlePOST(ServerRequestInterface $request) : ResponseInterface
+    private function _handleModify(ServerRequestInterface $request) : ResponseInterface
     {
         $DB     = \NDB_Factory::singleton()->database();
         $values = $request->getParsedBody();
@@ -161,12 +173,13 @@ class Diagnosis extends \NDB_Page
         // Validation: Visit is part of Project's config
         $projectVisits = $DB->pselectCol(
             "SELECT DISTINCT Visit_label FROM test_battery tb
-            JOIN project_subproject_rel psr ON (psr.SubprojectID=tb.SubprojectID)
+            JOIN project_cohort_rel psr ON (psr.CohortID=tb.CohortID)
             WHERE psr.ProjectID=:projID
             ORDER BY Visit_label",
             ['projID' => $projectID]
         );
-        if (!array_key_exists($visit, $projectVisits)) {
+
+        if (!in_array($visit, $projectVisits)) {
             return new \LORIS\Http\Response\JSON\Conflict(
                 'Visit is not defined for selected Project.'
             );
@@ -228,6 +241,26 @@ class Diagnosis extends \NDB_Page
         ];
 
         return $this->updateDiagnosisTrajectory($dxEvolutionID, $set);
+    }
+
+    /**
+     * Processes the values & saves to database and return a json response.
+     *
+     * @param ServerRequestInterface $request The incoming PSR7 request.
+     *
+     * @return ResponseInterface The outgoing PSR7 response
+     */
+    private function _handleDelete(ServerRequestInterface $request) : ResponseInterface
+    {
+        $DB     = \NDB_Factory::singleton()->database();
+        $values = $request->getParsedBody();
+
+        $dxEvolutionID  = $values['DxEvolutionID'] ?? null;
+
+        $DB->delete('candidate_diagnosis_evolution_rel', ['DxEvolutionID' => $dxEvolutionID]);
+        $DB->delete('diagnosis_evolution', ['DxEvolutionID' => $dxEvolutionID]);
+
+        return new \LORIS\Http\Response\JSON\OK();
     }
 
     /**

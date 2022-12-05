@@ -67,7 +67,7 @@ class Configuration extends \NDB_Form
             'Ym'  => 'Ym (EX: 2015-12)'
         ];
 
-        $instruments     = \Utility::getAllInstruments();
+        $instruments     = \Utility::getInstrumentNamesList();
         $instruments[''] = '';
 
         $this->tpl_data['parentMenuItems'] = $this->_getParentConfigLabels();

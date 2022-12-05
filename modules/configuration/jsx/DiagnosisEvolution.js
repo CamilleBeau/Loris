@@ -5,7 +5,7 @@ import Loader from 'Loader';
 import '../css/configuration.css';
 
 /**
- * Candidate date of death component
+ * Candidate diagnosis evolution component
  */
 class DiagnosisEvolution extends Component {
     /**
@@ -37,6 +37,7 @@ class DiagnosisEvolution extends Component {
         this.setFormData = this.setFormData.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleReset = this.handleReset.bind(this);
+        this.handleDelete = this.handleDelete.bind(this);
         this.addSourceField = this.addSourceField.bind(this);
         this.removeSourceField = this.removeSourceField.bind(this);
     }
@@ -108,7 +109,14 @@ class DiagnosisEvolution extends Component {
         const trajectoryData = id == 'new' ?
             this.state.formData.new :
             this.state.formData.diagnosisTracks[id];
-
+        const deleteButton = id !== 'new' ?
+                (
+                    <ButtonElement
+                        label='Delete'
+                        type='delete'
+                        onUserInput={this.handleDelete}
+                    />
+                ) : null;
         return (
             <TabPane TabId={`${dxEvolutionID}`} key={dxEvolutionID}>
                 <div className='row'>
@@ -192,6 +200,7 @@ class DiagnosisEvolution extends Component {
                                     type='reset'
                                     onUserInput={this.handleReset}
                                 />
+                                {deleteButton}
                             </div>
                         </FieldsetElement>
                     </FormElement>
@@ -265,6 +274,7 @@ class DiagnosisEvolution extends Component {
                 formObject.append(key, formData[key]);
             }
         }
+        formObject.append('action', 'modify');
         fetch(this.props.submitURL, {
             method: 'POST',
             cache: 'no-cache',
@@ -312,6 +322,52 @@ class DiagnosisEvolution extends Component {
     }
 
     /**
+     * Handles diagnosis delete
+     *
+     * @param {event} e - Form submission event
+     */
+    handleDelete(e) {
+        e.preventDefault();
+
+        const tabID = this.state.currentTab;
+
+        let diagnosisTracks = this.state.formData.diagnosisTracks;
+        let formData = diagnosisTracks[tabID];
+        let formObject = new FormData();
+        for (let key in formData) {
+            if (formData[key] !== '') {
+                formObject.append(key, formData[key]);
+            }
+        }
+
+        delete diagnosisTracks[tabID];
+        this.setState({'diagnosisTracks': diagnosisTracks});
+
+        formObject.append('action', 'delete');
+
+        fetch(this.props.submitURL, {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            body: formObject,
+        }).then((resp) => {
+            if (resp.ok) {
+                swal('Submission Successful!', '', 'success');
+                window.location.href =
+                    `${loris.BaseURL}/configuration/diagnosis_evolution`;
+            } else {
+                resp.json().then((msg) => {
+                    let status = resp.status == 409 ?
+                        'Conflict!' : 'Error!';
+                    swal(status, msg.error, 'error');
+                });
+            }
+        }).catch((error) => {
+            console.log(error);
+        });
+    }
+
+    /**
      * Add source field
      * @param {*} formElement
      * @param {string} value
@@ -338,7 +394,7 @@ class DiagnosisEvolution extends Component {
     }
 
     /**
-     * Add source field
+     * Remove source field
      * @param {*} formElement
      * @param {string} value
      * @param {*} pendingValKey
