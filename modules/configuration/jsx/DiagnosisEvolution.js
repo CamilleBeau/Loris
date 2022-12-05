@@ -117,6 +117,7 @@ class DiagnosisEvolution extends Component {
                         onUserInput={this.handleDelete}
                     />
                 ) : null;
+
         return (
             <TabPane TabId={`${dxEvolutionID}`} key={dxEvolutionID}>
                 <div className='row'>
