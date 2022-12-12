@@ -57,14 +57,13 @@ class Diagnosis extends \NDB_Page
         case 'GET':
             return $this->_handleGET();
         case 'POST':
-            $action = $request->getParsedBody()['action'];
+            $action = isset($request) ?
+                $request->getParsedBody()['action'] : null;
             switch ($action) {
             case 'modify':
                 return $this->_handleModify($request);
-                break;
             case 'delete':
                 return $this->_handleDelete($request);
-                break;
             default:
                 return new \LORIS\Http\Response\JSON\MethodNotAllowed(
                     $this->allowedMethods()
