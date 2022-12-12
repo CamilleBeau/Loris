@@ -57,8 +57,8 @@ class Diagnosis extends \NDB_Page
         case 'GET':
             return $this->_handleGET();
         case 'POST':
-            $action = isset($request) ?
-                $request->getParsedBody()['action'] : null;
+            $values = $request->getParsedBody();
+            $action = isset($values['action']) ?? null; 
             switch ($action) {
             case 'modify':
                 return $this->_handleModify($request);
