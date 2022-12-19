@@ -83,7 +83,7 @@
 
 ### Diagnosis Evolution Tab
 1. Confirm that all the fields in this panel correspond to what's stored in the candidate table.
-	* PSCID
+    * PSCID
     * DCCID
     * Latest Diagnosis
 2. Confirm that the information in the diagnosis evolution table matches the configured trajectories.
