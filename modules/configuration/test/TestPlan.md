@@ -72,8 +72,8 @@ project_cohort_rel table in the database.
   [Manual Test]
 5. Test the breadcrumb to see if you can navigate back to the main config page.
   [Automation Test]
-6. Go back to the project configuration page and click on the subproject link and 
-confirm that it brings you to the subproject configuration page.
+6. Go back to the project configuration page. Click on the cohort link at the top of the page and
+confirm that it brings you to the cohort configuration page.
   [Manual Test]
 
 ## Diagnosis Evolution 
