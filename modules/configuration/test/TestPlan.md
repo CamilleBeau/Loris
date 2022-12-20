@@ -92,5 +92,6 @@ the diagnosis trajectory configuration page.
 6. Test editing a currently existing trajectory. Test resetting the form as well with 
 the reset button.
   [Manual Test]
-7. Test the breadcrumb to see if you can navigate back to the main config page.
+7. Test deleting a currently existing trajectory. 
+8. Test the breadcrumb to see if you can navigate back to the main config page.
   [Automation Test]

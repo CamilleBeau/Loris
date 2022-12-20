@@ -3,6 +3,7 @@ import {TabPane, VerticalTabs} from 'Tabs';
 import PropTypes from 'prop-types';
 import Loader from 'Loader';
 import '../css/configuration.css';
+import swal from 'sweetalert2';
 
 /**
  * Candidate diagnosis evolution component
@@ -37,6 +38,7 @@ class DiagnosisEvolution extends Component {
         this.setFormData = this.setFormData.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleReset = this.handleReset.bind(this);
+        this.confirmDelete = this.confirmDelete.bind(this);
         this.handleDelete = this.handleDelete.bind(this);
         this.addSourceField = this.addSourceField.bind(this);
         this.removeSourceField = this.removeSourceField.bind(this);
@@ -114,7 +116,7 @@ class DiagnosisEvolution extends Component {
                     <ButtonElement
                         label='Delete'
                         type='delete'
-                        onUserInput={this.handleDelete}
+                        onUserInput={this.confirmDelete}
                     />
                 ) : null;
 
@@ -275,7 +277,6 @@ class DiagnosisEvolution extends Component {
                 formObject.append(key, formData[key]);
             }
         }
-        formObject.append('action', 'modify');
         fetch(this.props.submitURL, {
             method: 'POST',
             cache: 'no-cache',
@@ -283,14 +284,21 @@ class DiagnosisEvolution extends Component {
             body: formObject,
         }).then((resp) => {
             if (resp.ok) {
-                swal('Submission Successful!', '', 'success');
+                swal.fire({
+                    title: 'Submission Successful!',
+                    type: 'success',
+                });
                 window.location.href =
                     `${loris.BaseURL}/configuration/diagnosis_evolution`;
             } else {
                 resp.json().then((msg) => {
                     let status = resp.status == 409 ?
                         'Conflict!' : 'Error!';
-                    swal(status, msg.error, 'error');
+                    swal.fire({
+                        title: status,
+                        text: msg.error,
+                        type: 'error',
+                    });
                 });
             }
         }).catch((error) => {
@@ -323,44 +331,56 @@ class DiagnosisEvolution extends Component {
     }
 
     /**
-     * Handles diagnosis delete
+     * Swal for user to confirm deletion
      *
      * @param {event} e - Form submission event
      */
-    handleDelete(e) {
+    confirmDelete(e) {
         e.preventDefault();
 
+        swal.fire({
+            title: 'Are you sure you want to delete this diagnosis trajectory?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Delete',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (result.value) {
+                this.handleDelete();
+            }
+        });
+    }
+
+    /**
+     * Handles diagnosis delete
+     */
+    handleDelete() {
         const tabID = this.state.currentTab;
 
         let diagnosisTracks = this.state.formData.diagnosisTracks;
-        let formData = diagnosisTracks[tabID];
-        let formObject = new FormData();
-        for (let key in formData) {
-            if (formData[key] !== '') {
-                formObject.append(key, formData[key]);
-            }
-        }
+        let ID = diagnosisTracks[tabID]['DxEvolutionID'];
 
-        delete diagnosisTracks[tabID];
-        this.setState({'diagnosisTracks': diagnosisTracks});
-
-        formObject.append('action', 'delete');
-
-        fetch(this.props.submitURL, {
-            method: 'POST',
+        fetch(this.props.submitURL + '/?ID='+ ID, {
+            method: 'DELETE',
             cache: 'no-cache',
             credentials: 'same-origin',
-            body: formObject,
         }).then((resp) => {
             if (resp.ok) {
-                swal('Submission Successful!', '', 'success');
+                swal.fire({
+                    title: 'Deletion Successful!',
+                    type: 'success',
+                });
                 window.location.href =
                     `${loris.BaseURL}/configuration/diagnosis_evolution`;
             } else {
                 resp.json().then((msg) => {
                     let status = resp.status == 409 ?
                         'Conflict!' : 'Error!';
-                    swal(status, msg.error, 'error');
+                    swal.fire({
+                        title: status,
+                        text: message.error,
+                        type: 'error',
+                    });
                 });
             }
         }).catch((error) => {

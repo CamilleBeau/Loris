@@ -57,19 +57,10 @@ class Diagnosis extends \NDB_Page
         case 'GET':
             return $this->_handleGET();
         case 'POST':
-            $values = $request->getParsedBody();
-            $action = $values['action'] ?? null;
-            switch ($action) {
-            case 'modify':
-                return $this->_handleModify($request);
-            case 'delete':
-                return $this->_handleDelete($request);
-            default:
-                return new \LORIS\Http\Response\JSON\MethodNotAllowed(
-                    $this->allowedMethods()
-                );
-            }
-            default:
+            return $this->_handlePOST($request);
+        case 'DELETE':
+            return $this->_handleDELETE($request);
+        default:
             return new \LORIS\Http\Response\JSON\MethodNotAllowed(
                 $this->allowedMethods()
             );
@@ -143,7 +134,7 @@ class Diagnosis extends \NDB_Page
      *
      * @return ResponseInterface The outgoing PSR7 response
      */
-    private function _handleModify(ServerRequestInterface $request)
+    private function _handlePOST(ServerRequestInterface $request)
         : ResponseInterface
     {
         $DB     = \NDB_Factory::singleton()->database();
@@ -250,19 +241,20 @@ class Diagnosis extends \NDB_Page
      *
      * @return ResponseInterface The outgoing PSR7 response
      */
-    private function _handleDelete(ServerRequestInterface $request)
+    private function _handleDELETE(ServerRequestInterface $request)
         : ResponseInterface
     {
         $DB     = \NDB_Factory::singleton()->database();
-        $values = $request->getParsedBody();
+        $values  = $request->getQueryParams();
+        $ID      = $values['ID'];
 
-        $dxEvolutionID = $values['DxEvolutionID'] ?? null;
-
-        $DB->delete(
-            'candidate_diagnosis_evolution_rel',
-            ['DxEvolutionID' => $dxEvolutionID]
-        );
-        $DB->delete('diagnosis_evolution', ['DxEvolutionID' => $dxEvolutionID]);
+        if (!is_null($ID)){
+            $DB->delete(
+                'candidate_diagnosis_evolution_rel',
+                ['DxEvolutionID' => $ID]
+            );
+            $DB->delete('diagnosis_evolution', ['DxEvolutionID' => $ID]);
+        }
 
         return new \LORIS\Http\Response\JSON\OK();
     }
