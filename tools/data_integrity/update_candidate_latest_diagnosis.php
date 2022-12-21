@@ -15,7 +15,7 @@ require_once __DIR__ . '/../generic_includes.php';
 
 use LORIS\StudyEntities\Candidate\CandID;
 
-$DB = \NDB_Factory::singleton()->database();
+$DB      = \NDB_Factory::singleton()->database();
 $candIDs = $DB->pselectCol(
     "SELECT CandID FROM candidate
     WHERE Entity_type='Human' AND Active='Y'",
