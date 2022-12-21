@@ -243,10 +243,10 @@ class Diagnosis extends \NDB_Page
         : ResponseInterface
     {
         $DB     = \NDB_Factory::singleton()->database();
-        $values  = $request->getQueryParams();
-        $ID      = $values['ID'];
+        $values = $request->getQueryParams();
+        $ID     = $values['ID'];
 
-        if (!is_null($ID)){
+        if (!is_null($ID)) {
             $DB->delete(
                 'candidate_diagnosis_evolution_rel',
                 ['DxEvolutionID' => $ID]
