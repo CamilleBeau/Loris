@@ -461,7 +461,7 @@ class DiagnosisEvolution extends Component {
                         'Conflict!' : 'Error!';
                     swal.fire({
                         title: status,
-                        text: message.error,
+                        text: msg.error,
                         type: 'error',
                     });
                 });
