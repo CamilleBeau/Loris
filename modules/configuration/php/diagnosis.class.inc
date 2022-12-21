@@ -94,17 +94,14 @@ class Diagnosis extends \NDB_Page
         $visits      = \Utility::getVisitList();
         $instruments = \Utility::getAllInstruments();
 
-        $parameterType = $DB->pselect(
+        $parameterType = $DB->pselectCol(
             "SELECT DISTINCT SourceField FROM parameter_type
             WHERE Queryable='1'
             ORDER BY SourceField",
             []
         );
 
-        $sourceFields = [];
-        foreach ($parameterType as $record) {
-            $sourceFields[$record['SourceField']] = $record['SourceField'];
-        }
+        $sourceFields = array_combine($parameterType, $parameterType);
 
         $diagnosisTracks = $DB->pselectWithIndexKey(
             "SELECT * FROM diagnosis_evolution
@@ -145,7 +142,8 @@ class Diagnosis extends \NDB_Page
         $projectID      = $values['ProjectID'] ?? null;
         $visit          = $values['visitLabel'] ?? null;
         $instrumentName = $values['instrumentName'] ?? null;
-        $sourceFields   = isset($values['sourceField']) ?
+        $sourceFields   = isset($values['sourceField'])
+            && $values['sourceField'] != 'null' ?
             explode(',', $values['sourceField']) : [];
         $orderNumber    = $values['orderNumber'] ?? null;
 

@@ -29,6 +29,7 @@ class DiagnosisEvolution extends Component {
                     pendingSourceField: null,
                 },
             },
+            errorMessage: {},
             error: false,
             isLoaded: false,
             currentTab: 'new',
@@ -36,6 +37,7 @@ class DiagnosisEvolution extends Component {
 
         this.fetchData = this.fetchData.bind(this);
         this.setFormData = this.setFormData.bind(this);
+        this.validate = this.validate.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleReset = this.handleReset.bind(this);
         this.confirmDelete = this.confirmDelete.bind(this);
@@ -119,6 +121,16 @@ class DiagnosisEvolution extends Component {
                         onUserInput={this.confirmDelete}
                     />
                 ) : null;
+        const errorMessage = this.state.errorMessage[id] ?
+            this.state.errorMessage[id] :
+            {
+                Name: null,
+                ProjectID: null,
+                visitLabel: null,
+                instrumentName: null,
+                sourceField: null,
+                orderNumber: null,
+            };
 
         return (
             <TabPane TabId={`${dxEvolutionID}`} key={dxEvolutionID}>
@@ -139,6 +151,7 @@ class DiagnosisEvolution extends Component {
                                 onUserInput={this.setFormData}
                                 value={trajectoryData.Name}
                                 required={true}
+                                errorMessage={errorMessage.Name}
                             />
                             <SearchableDropdown
                                 name='ProjectID'
@@ -147,6 +160,7 @@ class DiagnosisEvolution extends Component {
                                 onUserInput={this.setFormData}
                                 value={trajectoryData.ProjectID}
                                 required={true}
+                                errorMessage={errorMessage.ProjectID}
                             />
                             <SearchableDropdown
                                 name='visitLabel'
@@ -155,6 +169,7 @@ class DiagnosisEvolution extends Component {
                                 onUserInput={this.setFormData}
                                 value={trajectoryData.visitLabel}
                                 required={true}
+                                errorMessage={errorMessage.visitLabel}
                             />
                             <SearchableDropdown
                                 name='instrumentName'
@@ -163,6 +178,7 @@ class DiagnosisEvolution extends Component {
                                 onUserInput={this.setFormData}
                                 value={trajectoryData.instrumentName}
                                 required={true}
+                                errorMessage={errorMessage.instrumentName}
                             />
                             <TagsElement
                                 name='sourceField'
@@ -181,6 +197,7 @@ class DiagnosisEvolution extends Component {
                                 pendingValKey='pendingSourceField'
                                 onUserAdd={this.addSourceField}
                                 onUserRemove={this.removeSourceField}
+                                errorMessage={errorMessage.sourceField}
                             />
                             <NumericElement
                                 name='orderNumber'
@@ -190,6 +207,7 @@ class DiagnosisEvolution extends Component {
                                 onUserInput={this.setFormData}
                                 value={trajectoryData.orderNumber}
                                 required={true}
+                                errorMessage={errorMessage.orderNumber}
                             />
                             <div className='btn-container'>
                                 <ButtonElement
@@ -260,6 +278,61 @@ class DiagnosisEvolution extends Component {
     }
 
     /**
+     * Sets required field errors
+     *
+     * @param {object} formData - Form data
+     * @param {string} tabID - Relevant tab
+     *
+     * @return {bool}
+     */
+    validate(formData, tabID) {
+        let isValid = true;
+
+        let errorMessage = this.state.errorMessage;
+        errorMessage[tabID] = {
+            Name: null,
+            ProjectID: null,
+            visitLabel: null,
+            instrumentName: null,
+            sourceField: null,
+            orderNumber: null,
+        };
+
+        if (!formData.Name) {
+            errorMessage[tabID]['Name'] = 'This field is required!';
+            isValid = false;
+        }
+        if (!formData.ProjectID) {
+            errorMessage[tabID]['ProjectID'] = 'This field is required!' +
+                ' Entry must be included in provided list of options.';
+            isValid = false;
+        }
+        if (!formData.visitLabel) {
+            errorMessage[tabID]['visitLabel'] = 'This field is required!' +
+                ' Entry must be included in provided list of options.';
+            isValid = false;
+        }
+        if (!formData.instrumentName) {
+            errorMessage[tabID]['instrumentName'] = 'This field is required!' +
+                ' Entry must be included in provided list of options.';
+            isValid = false;
+        }
+        if (!formData.sourceField) {
+            errorMessage[tabID]['sourceField'] = 'This field is required!' +
+                ' Please click "Add Field" before saving';
+            isValid = false;
+        }
+        if (!formData.orderNumber) {
+            errorMessage[tabID]['orderNumber'] = 'This field is required!';
+            isValid = false;
+        }
+
+        this.setState({errorMessage});
+        return isValid;
+    }
+
+
+    /**
      * Handles form submission
      *
      * @param {event} e - Form submission event
@@ -277,6 +350,10 @@ class DiagnosisEvolution extends Component {
                 formObject.append(key, formData[key]);
             }
         }
+        if (!this.validate(formData, tabID)) {
+            return;
+        }
+
         fetch(this.props.submitURL, {
             method: 'POST',
             cache: 'no-cache',
@@ -324,8 +401,14 @@ class DiagnosisEvolution extends Component {
           }
           formData[tabID] = formDataNew;
         } else {
+          let formDataTab = formData.diagnosisTracks[tabID];
+          for (let key in formDataTab) {
+              if (key !== 'DxEvolutionID') {
+                  formDataTab[key] = null;
+              }
+          }
           formData.diagnosisTracks[tabID]
-            = this.state.data.diagnosisTracks[tabID];
+            = formDataTab;
         }
         this.setState({formData});
     }
