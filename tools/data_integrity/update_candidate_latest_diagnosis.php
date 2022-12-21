@@ -15,6 +15,7 @@ require_once __DIR__ . '/../generic_includes.php';
 
 use LORIS\StudyEntities\Candidate\CandID;
 
+$DB = \NDB_Factory::singleton()->database();
 $candIDs = $DB->pselectCol(
     "SELECT CandID FROM candidate
     WHERE Entity_type='Human' AND Active='Y'",
@@ -41,7 +42,7 @@ foreach ($diagnosisTrajectories as $key => $data) {
 }
 
 $loris = new \LORIS\LorisInstance(
-    \NDB_Factory::singleton()->database(),
+    $DB,
     \NDB_Factory::singleton()->config(),
     [
         "project/modules",
@@ -49,21 +50,18 @@ $loris = new \LORIS\LorisInstance(
     ]
 );
 
-foreach ($candIDs as $k => $candID) {
+foreach ($candIDs as $candID) {
     $candidate         = \Candidate::singleton(new CandID($candID));
     $candidateVisits   = $candidate->getListOfVisitLabels();
-    $candidateProjects = \NDB_Factory::singleton()->database()->pselectCol(
-        "SELECT DISTINCT ProjectID
+    $candidateProjects = $DB->pselectColWithIndexKey(
+        "SELECT DISTINCT Visit_label, ProjectID
         FROM session
         WHERE CandID=:candID",
-        ['candID' => $candID]
+        ['candID' => $candID],
+        'Visit_label'
     );
 
     foreach ($diagnosisTrajectoryByProject as $projectID => $projectTrajectories) {
-        // Only save configured diagnosis evolution for candidate's projects
-        if (!in_array($projectID, $candidateProjects)) {
-            continue;
-        }
         foreach ($projectTrajectories as $key => $data) {
             // search if candidate has a matching visit
             $sessionID = array_search(
@@ -71,6 +69,11 @@ foreach ($candIDs as $k => $candID) {
                 array_reverse($candidateVisits, true)
             );
             if ($sessionID) {
+                // Check that projectID matches visit project
+                if ($candidateProjects[$data['visitLabel']] != $projectID) {
+                    continue;
+                }
+
                 $matchingVL = $candidateVisits[$sessionID];
 
                 // Find instance of instrument
