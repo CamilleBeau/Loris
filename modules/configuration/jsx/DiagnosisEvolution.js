@@ -401,14 +401,8 @@ class DiagnosisEvolution extends Component {
           }
           formData[tabID] = formDataNew;
         } else {
-          let formDataTab = formData.diagnosisTracks[tabID];
-          for (let key in formDataTab) {
-              if (key !== 'DxEvolutionID') {
-                  formDataTab[key] = null;
-              }
-          }
           formData.diagnosisTracks[tabID]
-            = formDataTab;
+            = this.state.data.diagnosisTracks[tabID];
         }
         this.setState({formData});
     }
