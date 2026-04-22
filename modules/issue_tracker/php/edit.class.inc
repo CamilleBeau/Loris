@@ -909,9 +909,33 @@ class Edit extends \NDB_Page implements ETagCalculator
                 (SELECT id FROM notification_modules
                     WHERE module_name='issue_tracker'
                     AND operation_type='create/edit'
-                )",
+                )
+                AND u.Active='Y'",
             []
         );
+
+        foreach ($usersWatching as $key => $watchingUserID) {
+            $watchingUser = \User::factory($watchingUserID);
+            $centerIDs  = $watchingUser->getCenterIDs() ?? [];
+            $centerList = implode(",", $centerIDs);
+            $centerList = explode(',', $centerList);
+            // Remove user from watching if:
+            // 1. They have the own site permission but the issue is from a different site
+            // 2. They do not have the issue tracker developer permission
+            if (
+                !(
+                    $watchingUser->hasPermission('issue_tracker_site_issue') &&
+                    (
+                        in_array($values['centerID'], $centerList) ||
+                        ($values['centerID'] ?? '') == ''
+                    )
+                )
+                && !$watchingUser->hasPermission('issue_tracker_developer')
+            ) {
+                unset($usersWatching[$key]); 
+            }
+        }
+
         // If the assignee is watching, add them
         if ($values['watching'] == 'Yes'
             && $issueValues['assignee'] == $user->getUsername()
@@ -1051,7 +1075,8 @@ class Edit extends \NDB_Page implements ETagCalculator
                     users u
                 WHERE
                     u.UserID = :assignee
-                    AND u.UserID != :currentUser",
+                    AND u.UserID != :currentUser
+                    AND u.Active='Y'",
                     [
                         'assignee'    => $changed_assignee,
                         'currentUser' => $user->getUserName(),
@@ -1069,9 +1094,10 @@ class Edit extends \NDB_Page implements ETagCalculator
         } else if (isset($changed_assignee) && $new_assignee_tag === 'true') {
             $issueChangeEmailsAssignee = iterator_to_array(
                 $db->pselect(
-                    "SELECT u.Email as Email, u.First_name as firstname " .
-                    "FROM users u WHERE u.UserID=:assignee
-                AND u.UserID<>:currentUser",
+                    "SELECT u.Email as Email, u.First_name as firstname
+                    FROM users u WHERE u.UserID=:assignee
+                    AND u.UserID<>:currentUser
+                    AND u.Active='Y'",
                     [
                         'assignee'    => $changed_assignee,
                         'currentUser' => $user->getUserName(),
@@ -1102,7 +1128,8 @@ class Edit extends \NDB_Page implements ETagCalculator
                     w.issueID = :issueID
                     AND u.UserID = :watcher
                     AND u.UserID != :assignee
-                    AND u.UserID != :currentUser",
+                    AND u.UserID != :currentUser
+                    AND u.Active='Y'",
                 [
                     'issueID'     => $issueID,
                     'watcher'     => $watcher,
