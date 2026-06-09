@@ -140,7 +140,7 @@ class Qc extends Endpoint implements \LORIS\Middleware\ETagCalculator
      */
     private function _handlePUT(ServerRequestInterface $request): ResponseInterface
     {
-        $user      = $request->getAttribute('user');
+        $user = $request->getAttribute('user');
         $data = json_decode((string) $request->getBody(), true);
         if (!is_array($data)) {
             return new \LORIS\Http\Response\JSON\BadRequest(
@@ -184,7 +184,10 @@ class Qc extends Endpoint implements \LORIS\Middleware\ETagCalculator
         $qcstatus  = $data['SessionQC'];
         $ispending = $data['Pending'] ? 'Y' : 'N';
 
-        if (!$user->hasPermission('imaging_browser_qc')) {
+        $projectID = $this->_visit->getProjectID();
+        if (!$user->hasPermission('imaging_browser_qc')
+            || !$user->hasProject($projectID)
+        ) {
             return new \LORIS\Http\Response\JSON\Forbidden(
                 'You can not edit imaging QC for this visit'
             );
