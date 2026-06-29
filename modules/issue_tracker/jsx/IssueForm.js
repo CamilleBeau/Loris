@@ -250,7 +250,7 @@ class IssueForm extends Component {
             label={t('Assignee', {ns: 'issue_tracker'})}
             emptyOption={true}
             options={this.state.Data.assignees}
-            disabledOptions={this.state.Data.inactiveUsers}
+            disabledOptions={this.state.Data.inactiveAssignees}
             onUserInput={this.setFormData}
             disabled={!hasEditPermission}
             value={this.state.formData.assignee}
@@ -346,6 +346,7 @@ class IssueForm extends Component {
             emptyOption={true}
             autoSelect={false}
             options={this.state.Data.otherWatchers}
+            disabledOptions={this.state.Data.inactiveAssignees}
             onUserInput={this.setFormData}
             multiple={true}
             value={this.state.formData.othersWatching}

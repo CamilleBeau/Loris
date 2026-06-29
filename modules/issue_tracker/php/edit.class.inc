@@ -71,77 +71,9 @@ class Edit extends \NDB_Page implements ETagCalculator
         $sites = Issue_Tracker::getSites(false, true);
 
         //not yet ideal permissions
-        $assignees      = [];
-        $inactive_users = [];
-        if ($user->hasPermission('issue_tracker_all_issue')) {
-            $assignee_expanded = $db->pselect(
-                "SELECT Real_name, UserID FROM users
-                    WHERE Active='Y' AND Pending_approval='N'",
-                []
-            );
-
-            $inactive_users_expanded = $db->pselect(
-                "SELECT Real_name, UserID FROM users
-                  WHERE Active='N'",
-                []
-            );
-        } else {
-            $CenterID = implode(',', $user->getCenterIDs());
-            $DCCID    = $db->pselectOne(
-                "SELECT CenterID from psc where Name='DCC'",
-                []
-            );
-            $assignee_expanded = $db->pselect(
-                "SELECT DISTINCT u.Real_name, u.UserID FROM users u
-                 LEFT JOIN user_psc_rel upr ON (upr.UserID=u.ID)
-                 WHERE (FIND_IN_SET(upr.CenterID,:CenterID) OR (upr.CenterID=:DCC))
-                 AND Active='Y' AND Pending_approval='N'",
-                [
-                    'CenterID' => $CenterID,
-                    'DCC'      => $DCCID,
-                ]
-            );
-
-            $inactive_users_expanded = $db->pselect(
-                "SELECT DISTINCT u.Real_name, u.UserID FROM users u
-                 LEFT JOIN user_psc_rel upr ON (upr.UserID=u.ID)
-                 WHERE (FIND_IN_SET(upr.CenterID,:CenterID) OR (upr.CenterID=:DCC))
-                 AND Active='N'",
-                [
-                    'CenterID' => $CenterID,
-                    'DCC'      => $DCCID,
-                ]
-            );
-        }
-
-        foreach ($assignee_expanded as $a_row) {
-            $assignees[$a_row['UserID']]
-                = $this->formatUserInformation($a_row['UserID']);
-        }
-
-        foreach ($inactive_users_expanded as $u_row) {
-            $inactive_users[$u_row['UserID']]
-                = $this->formatUserInformation($u_row['UserID']);
-        }
-        if (empty($inactive_users)) {
-            // Force an empty array to be parsed
-            // as an JSON object
-            $inactive_users = new \stdClass;
-        }
-
-        $otherWatchers = [];
-        $potential_watchers_expanded = $db->pselect(
-            "SELECT Real_name, UserID FROM users
-                WHERE Active='Y' AND Pending_approval='N'",
-            []
-        );
-        foreach ($potential_watchers_expanded as $w_row) {
-            if ($w_row['UserID'] != $user->getUsername()) {
-                $otherWatchers[$w_row['UserID']]
-                    = $this->formatUserInformation($w_row['UserID']);
-            }
-        }
-
+        // TODO: get a list of users who
+        // - have the all sites permission and are at the right projec
+        
         $priorities = [
             'low'       => dgettext('issue_tracker', 'Low'),
             'normal'    => dgettext('issue_tracker', 'Normal'),
@@ -171,16 +103,62 @@ class Edit extends \NDB_Page implements ETagCalculator
 
         $instruments = \NDB_BVL_Instrument::getInstrumentNamesList($this->loris);
 
-        // Now get issue values
+        // Get issue data 
         $issueData  = $this->getIssueData(null, $user);
-        $isOwnIssue = $issueData['reporter'] ==
-            $this->formatUserInformation($user->getUsername());
         if (!empty($values['issueID'])
             && $values['issueID'] != "new"
         ) { // if an existing issue
             $issueID   = intval($values['issueID']);
             $issueData = $this->getIssueData($issueID, $user);
+        }
 
+        $inactiveAssignees = [];
+        $inactiveWatchers = [];
+
+        $issueCenterID = (isset($issueData['centerID'])
+            && $issueData['centerID'] !== 'null')
+            ? (int)$issueData['centerID']
+            : null;
+
+        // Get issue user list for assignees / watchers
+        // Assignee / watchers list is all users who
+        // have access to the issue
+        $issueUsers = $db->pselect(
+            "SELECT DISTINCT u.Real_name, u.UserID
+            FROM users u
+            LEFT JOIN user_perm_rel upr ON upr.UserID = u.ID
+            LEFT JOIN permissions p ON p.permID = upr.permID
+            LEFT JOIN user_psc_rel ups ON ups.UserID = u.ID
+            WHERE (
+                p.code = 'issue_tracker_all_issue'
+                OR (
+                    p.code = 'issue_tracker_site_issue'
+                    AND (
+                        :centerID IS NULL
+                        OR ups.CenterID = :centerID
+                    )
+                )
+            )
+            AND u.Active = 'Y'
+            ORDER BY u.Real_name",
+            ['centerID' => $issueCenterID]
+        );
+
+        // Format assignees list by real name display
+        $assignees = [];
+        foreach ($issueUsers as $a_row) {
+            $assignees[$a_row['UserID']]
+                = $this->formatUserInformation($a_row['UserID']);
+        }
+        // Set watchers list to be the same as assignees
+        $otherWatchers = $assignees;
+
+        // Set values for existing issues
+        $isOwnIssue = $issueData['reporter'] ==
+            $this->formatUserInformation($user->getUsername());
+        if (!empty($values['issueID'])
+            && $values['issueID'] != "new"
+        ) { 
             // Re-set isOwnIssue variable if not a new issue
             $isOwnIssue = $issueData['reporter'] ==
                 $this->formatUserInformation($user->getUsername());
@@ -218,6 +196,7 @@ class Edit extends \NDB_Page implements ETagCalculator
             if (isset($issueAssigneeUserID)
                 && !isset($assignees[$issueAssigneeUserID])
             ) {
+                $inactiveAssignees[$issueAssigneeUserID] = $this->formatUserInformation($issueAssigneeUserID);
                 $assignees[$issueAssigneeUserID] = $db->pselectOne(
                     "SELECT Real_name FROM users
                     WHERE UserID=:userID",
@@ -227,10 +206,11 @@ class Edit extends \NDB_Page implements ETagCalculator
                 );
             }
 
-            $othersWatching = $this->getWatching($issueID);
             // add current watchers to others watching, even if not active
+            $othersWatching = $this->getWatching($issueID);
+            error_log(print_r($othersWatching, true));
+            $inactiveWatchers = array_diff_key($othersWatching, $otherWatchers);
             $otherWatchers = array_merge($otherWatchers, $othersWatching);
-            unset($otherWatchers[$user->getUserName()]);
 
             $issueData['watching']       = $isWatching === null ? 'No' : 'Yes';
             $issueData['commentHistory'] = $this->getComments($issueID);
@@ -247,6 +227,7 @@ class Edit extends \NDB_Page implements ETagCalculator
             // React is escaping the string in the template
             // This fixes an issue with multiple escaping (#6643)
         }
+
         $issueData['comment'] = null;
 
         $statuses = [
@@ -278,17 +259,17 @@ class Edit extends \NDB_Page implements ETagCalculator
         // Give edit permission if they are able to see all issues, site issues,
         // or their own issue
         $hasEditPermission = $user->hasAnyPermission(
-            [
-                'issue_tracker_all_issue',
-                'issue_tracker_site_issue',
-            ]
-        )
+                [
+                    'issue_tracker_all_issue',
+                    'issue_tracker_site_issue',
+                ]
+            )
             || ($user->hasPermission('issue_tracker_own_issue')
             && $isOwnIssue);
 
         $result = [
             'assignees'         => $assignees,
-            'inactiveUsers'     => $inactive_users,
+            'inactiveAssignees' => $inactiveAssignees,
             'sites'             => $sites,
             'statuses'          => $statuses,
             'priorities'        => $priorities,
@@ -296,6 +277,7 @@ class Edit extends \NDB_Page implements ETagCalculator
             'modules'           => $modules,
             'instruments'       => $instruments,
             'otherWatchers'     => $otherWatchers,
+            'inactiveWatchers'  => $inactiveWatchers,
             'issueData'         => $issueData,
             'hasEditPermission' => $hasEditPermission,
             'isOwnIssue'        => $isOwnIssue,
@@ -930,7 +912,7 @@ class Edit extends \NDB_Page implements ETagCalculator
                         ($values['centerID'] ?? '') == ''
                     )
                 )
-                && !$watchingUser->hasPermission('issue_tracker_developer')
+                && !$watchingUser->hasPermission('issue_tracker_all_issue')
             ) {
                 unset($usersWatching[$key]); 
             }
