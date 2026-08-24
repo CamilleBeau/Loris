@@ -19,21 +19,26 @@
 namespace LORIS\bvl_feedback;
 use \LORIS\StudyEntities\Candidate\CandID;
 
-$user = \User::singleton();
-if (!$user->hasPermission('bvl_feedback')) {
-    header("HTTP/1.1 403 Forbidden");
-    header("Content-Type: text/plain");
-    exit(
-        "You do not have valid permissions for this
-         operation."
-    );
-}
-
-$username = $user->getUsername();
-$data     = \Utility::parseFormData($_POST);
+$data = \Utility::parseFormData($_POST);
 
 if (isset($data['candID']) && !empty($data['candID'])) {
     $candID    = new CandID($data['candID']);
+    $user      = \User::singleton();
+    $candidate = \Candidate::singleton($candID);
+
+    if (!$user->hasPermission('bvl_feedback')
+        || !$candidate->isAccessibleBy($user)
+    ) {
+        header("HTTP/1.1 403 Forbidden");
+        header("Content-Type: text/plain");
+        exit(
+            "You do not have valid permissions for this
+            operation."
+        );
+    }
+
+    $username = $user->getUsername();
+
     $sessionID = null;
     $commentID = null;
 
@@ -51,5 +56,13 @@ if (isset($data['candID']) && !empty($data['candID'])) {
         $sessionID,
         $commentID
     );
+} else {
+    if (!$user->hasPermission('bvl_feedback')) {
+        header("HTTP/1.1 400 Bad Request");
+        header("Content-Type: text/plain");
+        exit(
+            "A candID must be supplied for this operation."
+        );
+    }
 }
 
